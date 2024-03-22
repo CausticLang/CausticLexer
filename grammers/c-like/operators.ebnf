@@ -1,0 +1,8 @@
+# Statement operators
+op_s_assign = IDENTIFIER "=" expression;
+op_s_setattr = expression "." IDENTIFIER "=" expression;
+op_s_setitem = IDENTIFIER "[" expression "]" "=" expression;
+@@keyword :: del
+op_s_del = "del" IDENTIFIER;
+op_s_delattr = "del" expression "." IDENTIFIER;
+op_s_delitem = "del" expression "[" expression "]";
