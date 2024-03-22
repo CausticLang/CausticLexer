@@ -1,3 +1,5 @@
 #include :: "./integer.ebnf"
+#include :: "./decimal.ebnf"
 
-literal = (type:`int` integer);
+literal = (type:`int` integer)
+        | (type:`decimal` decimal);
