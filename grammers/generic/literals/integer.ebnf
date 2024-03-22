@@ -1,0 +1,5 @@
+integer = (sign:"-" | [sign:`+` `+`]) val:(base2int | base10int | base16int);
+
+base2int = /0[bB][01][01_]*/;
+base10int = /\d[\d_]*/;
+base16int = /0[xX][\da-fA-F][\da-fA-F_]*/;

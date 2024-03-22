@@ -5,6 +5,7 @@
 #include :: "./generic/expression.ebnf"
 #include :: "./generic/statement.ebnf"
 #include :: "./generic/operators.ebnf"
+#include :: "./generic/literals/literals.ebnf"
 
 #include :: "./c-like/block.ebnf"
 #include :: "./c-like/import.ebnf"

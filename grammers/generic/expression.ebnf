@@ -1,4 +1,5 @@
 expression = (type:`invoke` val:proc_invoke_expr)
            | (type:`procedure` val:procedure_expr)
            | (type:`operator` val:expression_operator)
+           | (type:`literal` val:literal)
            | (type:`identifier` val:IDENTIFIER);

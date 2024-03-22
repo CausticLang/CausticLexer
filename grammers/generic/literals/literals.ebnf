@@ -1,0 +1,3 @@
+#include :: "./integer.ebnf"
+
+literal = (type:`int` integer);
