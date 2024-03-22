@@ -1,0 +1,4 @@
+@name
+IDENTIFIER = /[a-zA-Z_$][\w$]*/;
+identifier = IDENTIFIER;
+# ^ lowercase names have different whitespace properties
