@@ -1,0 +1,2 @@
+IMPORT_STMT = "#import " (path:/"(?:\w\/\.)+"/) | (name:/\w\./);
+INCLUDE_STMT = "#include " (path:/"(?:\w\/\.)+"/) | (name:/\w\./);
