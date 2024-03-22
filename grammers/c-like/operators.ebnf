@@ -1,8 +1,45 @@
 # Statement operators
-op_s_assign = IDENTIFIER "=" expression;
-op_s_setattr = expression "." IDENTIFIER "=" expression;
-op_s_setitem = IDENTIFIER "[" expression "]" "=" expression;
+op_s_assign = name:IDENTIFIER "=" val:expression;
+op_s_setattr = parent:expression "." key:IDENTIFIER "=" val:expression;
+op_s_setitem = parent:IDENTIFIER "[" key:expression "]" "=" val:expression;
 @@keyword :: del
-op_s_del = "del" IDENTIFIER;
-op_s_delattr = "del" expression "." IDENTIFIER;
-op_s_delitem = "del" expression "[" expression "]";
+op_s_del = "del" name:IDENTIFIER;
+op_s_delattr = "del" parent:expression "." name:IDENTIFIER;
+op_s_delitem = "del" parent:expression "[" key:expression "]";
+
+# Expression operators
+op_ternary = test:expression "?" a:expression ":" b:expression;
+## Asymmetrical operators
+op_e_pos = "+" target:expression;
+op_e_neg = "-" target:expression;
+op_e_inv = "~" target:expression;
+op_e_not = "!" target:expression;
+## Symmetrical operators
+op_e_assign = name:IDENTIFIER ":=" val:expression;
+op_e_getattr = parent:expression "." name:IDENTIFIER;
+op_e_getitem = parent:expression "[" key:expression "]";
+op_e_contains = parent:expression "~" val:expression;
+op_e_at = a:expression "@" b:expression;
+### Arithmetic
+op_e_add = a:expression "+" b:expression;
+op_e_sub = a:expression "-" b:expression;
+op_e_mult = a:expression "*" b:expression;
+op_e_div = a:expression "/" b:expression;
+op_e_exp = a:expression "**" b:expression;
+op_e_mod = a:expression "%" b:expression;
+### Bitwise
+op_e_lshift = a:expression "<<" b:expression;
+op_e_rshift = a:expression ">>" b:expression;
+op_e_band = a:expression "&" b:expression;
+op_e_bor = a:expression "|" b:expression;
+op_e_bxor = a:expression "^" b:expression;
+### Logical
+op_e_land = a:expression "&&" b:expression;
+op_e_lor = a:expression "||" b:expression;
+op_e_lxor = a:expression "^^" b:expression;
+### Comparison
+op_e_eq = a:expression "==" b:expression;
+op_e_lt = a:expression "<" b:expression;
+op_e_le = a:expression "<=" b:expression;
+op_e_gt = a:expression ">" b:expression;
+op_e_ge = a:expression ">=" b:expression;
