@@ -1,3 +1,4 @@
-expression = (type:`identifier` val:IDENTIFIER)
-           | (type:`invoke` val:proc_invoke_expr)
-           | (type:`operator` val:expression_operator);
+expression = (type:`invoke` val:proc_invoke_expr)
+           | (type:`procedure` val:procedure_expr)
+           | (type:`operator` val:expression_operator)
+           | (type:`identifier` val:IDENTIFIER);
