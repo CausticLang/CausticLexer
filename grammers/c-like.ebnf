@@ -1,0 +1,10 @@
+#include :: "./c-like/comments.ebnf"
+
+#include :: "./generic/main.ebnf"
+#include :: "./generic/identifier.ebnf"
+#include :: "./generic/expression.ebnf"
+#include :: "./generic/statement.ebnf"
+
+#include :: "./c-like/block.ebnf"
+#include :: "./c-like/import.ebnf"
+#include :: "./c-like/procedures.ebnf"
