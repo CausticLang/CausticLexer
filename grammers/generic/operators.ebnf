@@ -1,0 +1,51 @@
+operator = statement_operator | expression_operator;
+
+statement_operator
+= (op:`s_assign` op_s_assign)
+| (op:`setattr` op_s_setattr)
+| (op:`setitem` op_s_setitem)
+
+| (op:`del` op_s_del)
+| (op:`delattr` op_s_delattr)
+| (op:`delitem` op_s_delitem)
+;
+
+expression_operator
+= (op:`ternary` op_ternary)
+#TODO:slicing
+# asymmetrical operators
+| (op:`pos` op_e_pos)
+| (op:`neg` op_e_neg)
+| (op:`inv` op_e_inv)
+| (op:`not` op_e_not)
+# symmetrical operators
+| (op:`e_assign` op_e_assign)
+| (op:`getattr`  op_e_getattr)
+| (op:`getitem`  op_e_getitem)
+| (op:`contains` op_e_contains)
+## misc operators (usually symbols)
+| (op:`at` op_e_at)
+### arithmetic
+| (op:`add`  op_e_add)
+| (op:`sub`  op_e_sub)
+| (op:`mult` op_e_mult)
+| (op:`div`  op_e_div)
+| (op:`exp`  op_e_exp)
+| (op:`mod`  op_e_mod)
+### bitwise
+| (op:`lshift` op_e_lshift)
+| (op:`rshift` op_e_rshift)
+| (op:`band`   op_e_bitand)
+| (op:`bor`    op_e_bitor)
+| (op:`bxor`   op_e_bitxor)
+### logical
+| (op:`land` op_e_logand)
+| (op:`lor`  op_e_logor)
+| (op:`lxor` op_e_logxor)
+### comparison
+| (op:`eq` op_e_eq)
+| (op:`lt` op_e_lt)
+| (op:`le` op_e_le)
+| (op:`gt` op_e_gt)
+| (op:`ge` op_e_ge)
+;
