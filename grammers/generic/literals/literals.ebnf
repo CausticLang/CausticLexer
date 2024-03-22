@@ -1,5 +1,5 @@
 #include :: "./integer.ebnf"
 #include :: "./decimal.ebnf"
 
-literal = (type:`int` integer)
-        | (type:`decimal` decimal);
+literal = (type:`decimal` val:decimal)
+        | (type:`int` val:integer);
