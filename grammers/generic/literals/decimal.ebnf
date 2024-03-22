@@ -1,1 +1,1 @@
-decimal = /(?P<type>[dDfF])(?P<val>\d*\.\d+)(?P<e>[eE][+\-]\d+)?/;
+decimal = ("-" sign:`-` | ["+"] sign:`+`) val:/(\d*)\.(\d+)((?:[eE][\-+]\d+)?)/ (("f"|"F" type:`f`) | (["d"|"D"] type:`d`));
