@@ -1,0 +1,2 @@
+comment.single: "//"
+comment.block: "#[","]#"
