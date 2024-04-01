@@ -1,0 +1,6 @@
+# use "$" to begin "pragma" statements
+pragma.char: "$"
+# use "." to split "names" in pragma statements
+pragma.sep: "."
+
+# example: `$grammer.block.indent:disable`
