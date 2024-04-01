@@ -1,0 +1,5 @@
+# allow using C-like blocks as well
+$load blocks/c-like.cgram
+
+# enable using indents for blocks, and use ":" to begin an indent-denoted block
+block.indent: ":"

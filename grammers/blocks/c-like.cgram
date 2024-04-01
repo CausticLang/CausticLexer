@@ -1,0 +1,5 @@
+# disable using using indents for blocks
+block.indent: disable
+
+# use "{" to begin a block, "}" to end it
+block.delim: "{","}"
