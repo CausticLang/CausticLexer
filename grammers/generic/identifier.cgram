@@ -1,0 +1,6 @@
+identifier: /^(_*(?:[a-zA-Z][\w\d]*)?)$/
+
+# allows:
+# `_`, `_a`, `_a0`
+# disallows:
+# `0`, `_0`
