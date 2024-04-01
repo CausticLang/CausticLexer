@@ -6,6 +6,7 @@
 '''
 
 #> Imports
+import re
 import sys
 from os import PathLike
 from ast import literal_eval
@@ -111,7 +112,12 @@ class Grammer:
             Prepended with `_` to prevent usage as a pragma
         '''
         val = val.strip()
-        if val.startswith('/'): raise NotImplementedError # regex
+        if val.startswith('/'):
+            if not val.endswith('/'):
+                e = GrammerSyntaxError(f'Cannot parse value: {val!r}; expected "/"')
+                e.add_note('Note: appending RegEx flags is currently not supported, use Python-style inline RegEx flags instead')
+                e.add_note('https://docs.python.org/3/library/re.html#flags')
+            return re.compile(val[1:-1])
         if val.lower() == 'disable': return False
         if val.lower() == 'enable': return True
         try: return literal_eval(val)
