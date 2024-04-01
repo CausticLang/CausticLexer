@@ -1,9 +1,0 @@
-procedure_stmt = rtype:IDENTIFIER bind:identifier "(" [args:argdeflist [","]] ")" body:block;
-procedure_expr = rtype:IDENTIFIER "(" [args:argdeflist [","]] ")" body:block;
-
-argdeflist = ",".{ argdef }*; # val:`None` mark:`pos` "/") | (val:`None` mark:`kw` "*") | (val:argdef mark:`None`) }*;
-argdef = [("**" var:`kwargs`) | ("*" var:`args`)] name:identifier ":" type:identifier ["=" default:expression];
-
-proc_invoke_expr = name:IDENTIFIER "(" [args:arglist [","]] ")";
-arglist = ",".{ arg };
-arg = (name:identifier "=" val:expression) | ([("**" var:`kwargs`) | ("*" var:`args`)] val:expression);

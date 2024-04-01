@@ -1,4 +1,0 @@
-block = singleblock | multiblock;
-
-singleblock = @:((type:`stmt` val:statement) | (type:`expr` val:expression)) ";";
-multiblock = type:`blck` "{" val:{block}* "}";
