@@ -10,7 +10,7 @@ from . import tokenizer
 #</Imports
 
 #> Header >/
-__all__ = ('pragma', 'PragmaError',
+__all__ = ('PragmaError', 'pragma', 'types',
            'grammer', 'print_')
 
 class PragmaError(Exception):
@@ -18,12 +18,11 @@ class PragmaError(Exception):
     __slots__ = ()
 
 def pragma(type_: str, name: cabc.Sequence[str], arg: str, *, tokenizer: 'tokenizer.Tokenizer') -> None:
-    if type_ == 'grammer':
-        return grammer(name, arg, tokenizer)
-    if type_ == 'print':
-        return print_(name, arg, tokenizer)
+    if (meth := types.get(type_, None)) is not None:
+        return meth(name, arg, tokenizer)
     raise PragmaError(f'Unknown pragma type: {type_!r}')
 
+# Pragma types
 def grammer(name: cabc.Sequence[str], arg: str, tokenizer: 'tokenizer.Tokenizer') -> None:
     tokenizer.grammer.fn_chone(f'{".".join(name)}:{arg}', source=f'<pragma@{tokenizer.source or "<unknown>"}'
                                f' l{"?" if tokenizer.lno < 0 else tokenizer.lno}'
@@ -33,3 +32,8 @@ def print_(name: cabc.Sequence[str], arg: str, tokenizer: 'tokenizer.Tokenizer')
     if name:
         raise PragmaError('Unexpected "name" value in print pragma')
     print(arg, file=sys.stderr)
+
+types = {
+    'grammer': grammer,
+    'print': print_,
+}
