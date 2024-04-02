@@ -54,13 +54,12 @@ class Tokenizer:
         self.buffer.close()
 
     def _b_read_until(self, until: str) -> str:
-        try: text = ''.join(iter(lambda: self.buffer.read(1), until))
-        except StopIteration:
+        start = self.buffer.tell()
+        try: index = self.buffer.read().index('\n')
+        except ValueError:
             raise ParseError(f'{until!r} expected (reached EOF)', source=self.source, lno=self.lno, cno=self.cno)
-        self.lno += text.count('\n')
-        if until == '\n': self.lno += 1
-        self.cno = len(text.rsplit('\n')[-1])
-        return text
+        self.buffer.seek(start)
+        return self._b_read(index)
     def _b_read_regex(self, patt: re.Pattern) -> str:
         start = self.buffer.tell()
         text = self.buffer.read()
