@@ -5,6 +5,7 @@ import io
 import re
 import typing
 from dataclasses import dataclass
+from collections.abc import Callable
 
 from . import tokens # re-exposed
 
@@ -38,7 +39,7 @@ class Tokenizer:
         Tokenizes Caustic source code into tokens
         Note: holds state
     '''
-    __slots__ = ('grammer', 'buffer', 'source', 'lno', 'cno', 'token_finders', '_last', '_indent_size')
+    __slots__ = ('grammer', 'buffer', 'source', 'lno', 'cno', 'token_finders', 'last', 'indent_size')
 
     MARK_TOKSUCC = object()
 
@@ -46,6 +47,10 @@ class Tokenizer:
     buffer: typing.TextIO
     source: str | None
     lno: int; cno: int
+
+    token_finders: tuple[Callable[[str, bool], None | tokens.Token | object], ...]
+    last: None | tokens.Token
+    indent_size: None | int
 
     def __init__(self, grammer: Grammer):
         self.grammer = grammer
@@ -59,7 +64,7 @@ class Tokenizer:
             self.tok_block_start, self.tok_block_end,
                 self.tok_indent_mark, self.tok_indent,
         )
-        self._last = self._indent_size = None
+        self.last = self.indent_size = None
     def __del__(self):
         self.buffer.close()
 
@@ -123,13 +128,13 @@ class Tokenizer:
     def tokenize_pass_once(self) -> tokens.Token | tuple[tokens.Token] | None:
         '''Moves over one read, returning a `Token` or `None`'''
         c = self._b_read(1)
-        nl = isinstance(self._last, tokens.NewlineEOL)
+        nl = isinstance(self.last, tokens.NewlineEOL)
         for finder in self.token_finders:
             res = finder(c, nl)
             if callable(res): # `Token` class or `Token.part` method
                 res = res(src=self.source, lno=self.lno, cno=self.cno)
             if isinstance(res, tokens.Token):
-                self._last = res
+                self.last = res
                 return res
             if res is self.MARK_TOKSUCC: return None
         raise ParseError(f'Unexpected character: {c!r}', source=self.source, lno=self.lno, cno=self.cno)
@@ -138,7 +143,7 @@ class Tokenizer:
     def consume_indentation(self) -> int:
         '''Consumes indentation'''
         count = 0
-        while self._b_chk_for(' '*self._indent_size, True): count += 1
+        while self._b_chk_for(' '*self.indent_size, True): count += 1
         if self._b_chk_for(' ', True):
             raise ParseError(f'Extraneous leading space in indented block', source=self.source, lno=self.lno, cno=self.cno)
         return count
@@ -192,13 +197,12 @@ class Tokenizer:
     def tok_indent(self, c: str, nl: bool) -> tokens.Token | None:
         if not (self.grammer.block.indent and nl and (c == ' ')): return None
         loc = self._b_backup(1)
-        if self._indent_size is None:
-            self._indent_size = 1
-            self._indent_size = self.consume_indentation()
-            print(self._indent_size)
+        if self.indent_size is None:
+            self.indent_size = 1
+            self.indent_size = self.consume_indentation()
             lvl = 1
         else: lvl = self.consume_indentation()
-        if not lvl: self._indent_size = None
+        if not lvl: self.indent_size = None
         if loc-1 == self.buffer.tell():
             self._b_read(1)
         return tokens.Block.Indent.part(lvl)
