@@ -25,7 +25,7 @@ class _BaseValToken(Token):
     def __init__(self, val: typing.Any, **kwargs):
         self.vals = val
         super().__init__(**kwargs)
-class _BaseValToken(Token):
+class _BaseValsToken(Token):
     '''Base token type that takes multiple values'''
     __slots__ = ('vals',)
 
@@ -34,6 +34,6 @@ class _BaseValToken(Token):
         super().__init__(**kwargs)
 
 # Tokens
-class Comment(BaseValToken):
+class Comment(_BaseValToken):
     '''Denotes a single or multi-line comment'''
     __slots__ = ()

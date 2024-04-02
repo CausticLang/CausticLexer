@@ -76,7 +76,7 @@ class Tokenizer:
         self.cno = len(text.rsplit('\n')[1])
         return text
 
-    def tokenize_pass_once(self) -> typing.Generator[Token, None, None]:
+    def tokenize_pass_once(self) -> typing.Generator[tokens.Token, None, None]:
         '''Moves over one read, yielding as many tokens as that read yields (including no tokens)'''
         match self._b_read(1):
             case '': return # EOF
