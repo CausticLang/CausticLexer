@@ -25,9 +25,9 @@ def pragma(type_: str, name: cabc.Sequence[str], arg: str, *, tokenizer: 'tokeni
     raise PragmaError(f'Unknown pragma type: {type_!r}')
 
 def grammer(name: cabc.Sequence[str], arg: str, *, tokenizer: 'tokenizer.Tokenizer') -> None:
-    tokenizer.grammer.chone(name, source=f'<pragma@{tokenizer.source or "<unknown>"}'
-                            f' l{"?" if tokenizer.lno < 0 else tokenizer.lno}'
-                            f' c{"?" if tokenizer.lno < 0 else tokenizer.cno}')
+    tokenizer.grammer.fn_chone(name, source=f'<pragma@{tokenizer.source or "<unknown>"}'
+                               f' l{"?" if tokenizer.lno < 0 else tokenizer.lno}'
+                               f' c{"?" if tokenizer.lno < 0 else tokenizer.cno}')
 
 def print_(name: cabc.Sequence[str], arg: str, *, tokenizer: 'tokenizer.Tokenizer') -> None:
     if name:

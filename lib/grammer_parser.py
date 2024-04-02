@@ -34,7 +34,7 @@ class GrammerLoadingError(GrammerException):
         super().__init__(*args, **kwargs)
 class GrammerNotFoundError(GrammerLoadingError):
     '''
-        For when an "include" pragma or `.apply()` method
+        For when an "include" pragma or `.fn_apply()` method
             references a path that does not exist as a file
     '''
     __slots__ = ('target',)
@@ -81,9 +81,9 @@ class Grammer:
     def __getattr__(self, attr: str) -> typing.Any:
         return getattr(self.grammer, attr)
 
-    def load(self, file: PathLike | str, source: str | None = None) -> None:
+    def fn_load(self, file: PathLike | str, source: str | None = None) -> None:
         '''
-            Loads the grammer from `path`, using `.apply()`
+            Loads the grammer from `path`, using `.fn_apply()`
             If `path` is a string (isn't a `PathLike`), and does not start with `/` or `.`,
                 then it is tried from each of `.include_dirs`
         '''
@@ -108,7 +108,7 @@ class Grammer:
                                        target=path, source=source) from None
         except Exception:
             raise GrammerException(f'Could not read grammer from "{path}"')
-        self.apply(grammer, source=file)
+        self.fn_apply(grammer, source=file)
 
     def _convert_val(self, val: str) -> object:
         '''
@@ -127,16 +127,16 @@ class Grammer:
         try: return literal_eval(val)
         except Exception:
             raise GrammerSyntaxError(f'Cannot parse value: {val!r}', source=None)
-    def apply(self, grammer: str, source: str | None = None) -> None:
+    def fn_apply(self, grammer: str, source: str | None = None) -> None:
         '''Loads the grammer as a string from `grammer`'''
         for s in grammer.splitlines():
             if not (s := s.strip()): continue # strip whitespace and skip non-statements
             if s.startswith('$'): # handle pragmas
-                self.pragma(s[1:], source=source)
+                self.fn_pragma(s[1:], source=source)
                 continue
             if s.startswith('#'): continue # handle comments
-            self.chone(s, source=source)
-    def chone(self, kval: str, source: str | None = None) -> None:
+            self.fn_chone(s, source=source)
+    def fn_chone(self, kval: str, source: str | None = None) -> None:
         try: name,val = kval.split(':', 1) # extract name and value
         except ValueError:
             raise GrammerSyntaxError(f'Could not parse statement {s!r}', source=source)
@@ -154,19 +154,19 @@ class Grammer:
         setattr(t, name[-1], val)
 
     # pragmas
-    def pragma(self, pragma: str, source: str | None = None) -> None:
+    def fn_pragma(self, pragma: str, source: str | None = None) -> None:
         '''Handles a "$" / pragma statement in a grammer'''
         if not pragma[0].isalpha():
             raise GrammerPragmaSyntaxError(f'Pragma directives beginning with non-alphabetical characters are disallowed: {pragma!r}', source=source)
         pragma = pragma.split(' ')
-        pmeth = getattr(self, pragma[0], None)
+        pmeth = getattr(self, f'fn_{pragma[0]}', None)
         if pmeth is None:
-            raise GrammerPragmaSyntaxError(f'Pragma directive "{pmeth}" not found')
+            raise GrammerPragmaSyntaxError(f'Pragma directive "{pragma}" not found')
         pmeth(*pragma[1:], source=source)
     ## pragma directives
-    def print(self, *args, source: str | None = None) -> None:
+    def fn_print(self, *args, source: str | None = None) -> None:
         '''Prints a message to stderr'''
         print(*args, file=sys.stderr)
-    def fail(self, *args, source: str | None = None) -> None:
+    def fn_fail(self, *args, source: str | None = None) -> None:
         '''Raises a `GrammerException`'''
         raise GrammerException(*args)
