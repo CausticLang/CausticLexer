@@ -2,12 +2,14 @@
 
 #> Imports
 import typing
+from types import SimpleNamespace
 from collections import abc as cabc
 #</Imports
 
 #> Header >/
 __all__ = ('Token',
-           'EOF', 'Comment')
+           'EOF', 'Comment',
+           'Block')
 
 class Token:
     '''Base token type'''
@@ -47,3 +49,13 @@ class EOF(Token):
 class Comment(_BaseValToken):
     '''Denotes a single or multi-line comment'''
     __slots__ = ()
+
+class BlockStart(Token):
+    '''Denotes the start of a block'''
+    __slots__ = ()
+class BlockEnd(Token):
+    '''Denotes the end of a block'''
+    __slots__ = ()
+Block = SimpleNamespace(Start=BlockStart,
+                        End=BlockEnd)
+del BlockStart, BlockEnd

@@ -56,6 +56,7 @@ class Tokenizer:
             self.tok_eof,
             self.tok_pragma,
             self.tok_comment_single, self.tok_comment_block,
+            self.tok_block_start, self.tok_block_end,
         )
     def __del__(self):
         self.buffer.close()
@@ -143,3 +144,15 @@ class Tokenizer:
         if not self._tok_start_helper(c, self.grammer.comment.block[0]): return None
         return tokens.Comment.part(self._b_read_until(self.grammer.comment.block[1]))
 
+    def tok_block_start(self, c: str) -> tokens.Token | None:
+        if self.grammer.block.indent:
+            raise NotImplementedError('Indentation-based blocks are not implemented yet')
+        if self._tok_start_helper(c, self.grammer.block.delim[0]):
+            return tokens.Block.Start
+        return None
+    def tok_block_end(self, c: str) -> tokens.Token | None:
+        if self.grammer.block.indent:
+            raise NotImplementedError('Indentation-based blocks are not implemented yet')
+        if self._tok_start_helper(c, self.grammer.block.delim[1]):
+            return tokens.Block.End
+        return None
