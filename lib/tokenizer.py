@@ -38,9 +38,9 @@ class Tokenizer:
         Tokenizes Caustic source code into tokens
         Note: holds state
     '''
-    __slots__ = ('grammer', 'buffer', 'source', 'lno', 'cno')
+    __slots__ = ('grammer', 'buffer', 'source', 'lno', 'cno', 'token_finders')
 
-    EOFMark = object()
+    MARK_TOKSUCC = object()
 
     grammer: Grammer
     buffer: typing.TextIO
@@ -52,6 +52,11 @@ class Tokenizer:
         self.buffer = io.StringIO()
         self.source = None
         self.lno = self.cno = 0
+        self.token_finders = (
+            self.tok_eof,
+            self.tok_pragma,
+            self.tok_comment_single, self.tok_comment_block,
+        )
     def __del__(self):
         self.buffer.close()
 
@@ -63,11 +68,13 @@ class Tokenizer:
         self.buffer.seek(start)
         return written
 
-    def _b_read_until(self, until: str) -> str:
+    def _b_read_until(self, until: str, *, allow_eof: bool = False) -> str:
         start = self.buffer.tell()
         try: index = self.buffer.read().index('\n')
         except ValueError:
-            raise ParseError(f'{until!r} expected (reached EOF)', source=self.source, lno=self.lno, cno=self.cno)
+            if not allow_eof:
+                raise ParseError(f'{until!r} expected (reached EOF)', source=self.source, lno=self.lno, cno=self.cno)
+            index = -1
         self.buffer.seek(start)
         return self._b_read(index)
     def _b_read_regex(self, patt: re.Pattern) -> str:
@@ -84,31 +91,55 @@ class Tokenizer:
         self.lno += text.count('\n')
         self.cno = len(text.rsplit('\n')[-1])
         return text
+    def _b_lookahead(self, count: int) -> str:
+        curr = self.buffer.tell()
+        text = self.buffer.read(count)
+        self.buffer.seek(curr)
+        return text
+    def _b_chk_for(self, val: str, consume_success: bool) -> bool:
+        curr = self.buffer.tell()
+        success = self.buffer.read(len(val)) == val
+        if (not success) or (not consume_success):
+            self.buffer.seek(curr)
+        return success
 
     def tokenize(self) -> typing.Generator[tokens.Token, None, None]:
         '''Yields all tokens until an exception occurs or EOF is reached'''
-        tok = None
-        while tok is not self.EOFMark:
-            for tok in self.tokenize_pass_once(): yield tok
-    def tokenize_pass_once(self) -> typing.Generator[tokens.Token | object, None, None]:
-        '''Moves over one read, yielding as many tokens as that read yields (including no tokens)'''
-        match self._b_read(1):
-            case '': # EOF
-                yield EOFMark
-                return
-            case self.grammer.pragma.start:
-                val = self.pragma()
-            case _ as c:
-                raise ParseError(f'Unexpected character: {c!r}', source=self.source, lno=self.lno, cno=self.cno)
-        if val is None: return
-        if isinstance(val, Token): yield val
-        else: yield from val
+        while True:
+            tok = self.tokenize_pass_once()
+            if tok is None: continue
+            yield tok
+            if isinstance(tok, tokens.EOF): return
+    def tokenize_pass_once(self) -> tokens.Token | None:
+        '''Moves over one read, returning a `Token` or `None`'''
+        while (c := self._b_read(1)) == '\n': pass # skip blank lines
+        for finder in self.token_finders:
+            res = finder(c)
+            if callable(res): # `Token` class or `Token.part` method
+                return res(src=self.source, lno=self.lno, cno=self.cno)
+            if res is self.MARK_TOKSUCC: return None
+        raise ParseError(f'Unexpected character: {c!r}', source=self.source, lno=self.lno, cno=self.cno)
 
-    # Token yielders
-    def pragma(self) -> None:
+    # Token finders
+    def _tok_start_helper(self, c: str, target: str) -> bool:
+        '''A helper function that checks for (and consumes) the `target` string in the buffer'''
+        return target.startswith(c) and self._b_chk_for(target[1:], True)
+
+    def tok_eof(self, c: str) -> tokens.Token | None:
+        if not c: return tokens.EOF
+        return None
+    def tok_pragma(self, c: str) -> object | None:
+        if not self._tok_start_helper(c, self.grammer.pragma.start): return None
         pnt,parg = (self._b_read_until(self.grammer.pragma.stop)
                     .split(self.grammer.pragma.vsep, 1))
         ptype,*pname = pnt.split(self.grammer.pragma.tsep)
         pragma.pragma(ptype, pname, parg, tokenizer=self)
+        return self.MARK_TOKSUCC
 
-    def comment(self) -> None: pass
+    def tok_comment_single(self, c: str) -> tokens.Token | None:
+        if not self._tok_start_helper(c, self.grammer.comment.single): return None
+        return tokens.Comment.part(self._b_read_until('\n', allow_eof=True))
+    def tok_comment_block(self, c: str) -> tokens.Token | None:
+        if not self._tok_start_helper(c, self.grammer.comment.block[0]): return None
+        return tokens.Comment.part(self._b_read_until(self.grammer.comment.block[1]))
+
