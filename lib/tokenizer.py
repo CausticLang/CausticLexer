@@ -59,7 +59,7 @@ class Tokenizer:
             raise ParseError(f'{until!r} expected (reached EOF)', source=self.source, lno=self.lno, cno=self.cno)
         self.lno += text.count('\n')
         if until == '\n': self.lno += 1
-        self.cno = len(text.rsplit('\n')[1])
+        self.cno = len(text.rsplit('\n')[-1])
         return text
     def _b_read_regex(self, patt: re.Pattern) -> str:
         start = self.buffer.tell()
@@ -73,7 +73,7 @@ class Tokenizer:
     def _b_read(self, count: int) -> str:
         text = self.buffer.read(count)
         self.lno += text.count('\n')
-        self.cno = len(text.rsplit('\n')[1])
+        self.cno = len(text.rsplit('\n')[-1])
         return text
 
     def tokenize_pass_once(self) -> typing.Generator[tokens.Token, None, None]:
