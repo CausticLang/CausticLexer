@@ -21,7 +21,7 @@ class Token:
     @classmethod
     def part(cls, *oargs, **okwargs) -> cabc.Callable[[...], typing.Self]:
         def tokenbuilder(*iargs, **ikwargs) -> Token:
-            return type_(*oargs, *iargs, **okwargs, **ikwargs)
+            return cls(*oargs, *iargs, **okwargs, **ikwargs)
         return tokenbuilder
 
 # Bases
@@ -30,7 +30,7 @@ class _BaseValToken(Token):
     __slots__ = ('val',)
 
     def __init__(self, val: typing.Any, **kwargs):
-        self.vals = val
+        self.val = val
         super().__init__(**kwargs)
 class _BaseValsToken(Token):
     '''Base token type that takes multiple values'''
