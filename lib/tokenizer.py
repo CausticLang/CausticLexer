@@ -53,6 +53,14 @@ class Tokenizer:
     def __del__(self):
         self.buffer.close()
 
+    def write(self, data: str) -> int:
+        '''Writes data to the end of the buffer and restores the stream position (on success)'''
+        start = self.buffer.tell()
+        self.buffer.seek(0, io.SEEK_END)
+        written = self.buffer.write(data)
+        self.buffer.seek(start)
+        return written
+
     def _b_read_until(self, until: str) -> str:
         start = self.buffer.tell()
         try: index = self.buffer.read().index('\n')
