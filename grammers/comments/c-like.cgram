@@ -1,2 +1,2 @@
 comment.single: "//"
-comment.block: "#[","]#"
+comment.block: "/*","*/"
