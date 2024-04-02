@@ -8,7 +8,8 @@ from collections import abc as cabc
 
 #> Header >/
 __all__ = ('Token',
-           'EOF', 'EOL', 'NewlineEOL', 'Comment', 'Block')
+           'EOF', 'EOL', 'NewlineEOL', 'Comment',
+           'Block', 'Literal')
 
 class Token:
     '''Base token type'''
@@ -76,3 +77,10 @@ class Indent(_BaseValToken):
 Block.IndentMark = IndentMark
 Block.Indent = Indent
 del IndentMark, Indent
+
+## Literals
+class IntegerLiteral(_BaseValToken):
+    '''Denotes an integer literal'''
+    __slots__ = ()
+Literal = SimpleNamespace(Integer=IntegerLiteral)
+del IntegerLiteral

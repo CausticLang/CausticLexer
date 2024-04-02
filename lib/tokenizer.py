@@ -63,6 +63,7 @@ class Tokenizer:
             self.tok_comment_single, self.tok_comment_block,
             self.tok_block_start, self.tok_block_end,
                 self.tok_indent_mark, self.tok_indent,
+            self.tok_literal_integer,
         )
         self.last = self.indent_size = None
     def __del__(self):
@@ -208,3 +209,12 @@ class Tokenizer:
         if loc-1 == self.buffer.tell():
             self._b_read(1)
         return tokens.Block.Indent.part(lvl)
+
+    ## Literals
+    def tok_literal_integer(self, c: str, nl: bool) -> tokens.Token | None:
+        self._b_backup(1)
+        val = self._b_read_regex(self.grammer.literal.integer)
+        if val is None:
+            self._b_read(1) # remove backed-up character
+            return None
+        return tokens.Literal.Integer.part(int(val.group(1), base=0))
