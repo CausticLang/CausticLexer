@@ -40,6 +40,8 @@ class Tokenizer:
     '''
     __slots__ = ('grammer', 'buffer', 'source', 'lno', 'cno')
 
+    EOFMark = object()
+
     grammer: Grammer
     buffer: typing.TextIO
     source: str | None
@@ -83,10 +85,17 @@ class Tokenizer:
         self.cno = len(text.rsplit('\n')[-1])
         return text
 
-    def tokenize_pass_once(self) -> typing.Generator[tokens.Token, None, None]:
+    def tokenize(self) -> typing.Generator[tokens.Token, None, None]:
+        '''Yields all tokens until an exception occurs or EOF is reached'''
+        tok = None
+        while tok is not self.EOFMark:
+            for tok in self.tokenize_pass_once(): yield tok
+    def tokenize_pass_once(self) -> typing.Generator[tokens.Token | object, None, None]:
         '''Moves over one read, yielding as many tokens as that read yields (including no tokens)'''
         match self._b_read(1):
-            case '': return # EOF
+            case '': # EOF
+                yield EOFMark
+                return
             case self.grammer.pragma.start:
                 val = self.pragma()
             case _ as c:
