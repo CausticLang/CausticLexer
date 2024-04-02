@@ -38,7 +38,7 @@ class Tokenizer:
         Tokenizes Caustic source code into tokens
         Note: holds state
     '''
-    __slots__ = ('grammer', 'buffer', 'source', 'lno', 'cno', 'token_finders')
+    __slots__ = ('grammer', 'buffer', 'source', 'lno', 'cno', 'token_finders', '_indent_size')
 
     MARK_TOKSUCC = object()
 
@@ -57,7 +57,9 @@ class Tokenizer:
             self.tok_pragma,
             self.tok_comment_single, self.tok_comment_block,
             self.tok_block_start, self.tok_block_end,
+                self.tok_indent_mark, self.tok_indent,
         )
+        self._indent_size = None
     def __del__(self):
         self.buffer.close()
 
@@ -92,6 +94,13 @@ class Tokenizer:
         self.lno += text.count('\n')
         self.cno = len(text.rsplit('\n')[-1])
         return text
+    def _b_backup(self, count: int) -> int:
+        # WARNING: .lno and .cno will be desynced if newlines are backed over!
+        # returns the original buffer position
+        loc = self.buffer.tell()
+        self.buffer.seek(loc - count)
+        self.cno -= count
+        return loc
     def _b_lookahead(self, count: int) -> str:
         curr = self.buffer.tell()
         text = self.buffer.read(count)
@@ -109,27 +118,39 @@ class Tokenizer:
         while True:
             tok = self.tokenize_pass_once()
             if tok is None: continue
-            yield tok
+            if isinstance(tok, tuple):
+                yield from iter(tok) # multi-indent closing
+            else: yield tok
             if isinstance(tok, tokens.EOF): return
-    def tokenize_pass_once(self) -> tokens.Token | None:
+    def tokenize_pass_once(self) -> tokens.Token | tuple[tokens.Token] | None:
         '''Moves over one read, returning a `Token` or `None`'''
-        while (c := self._b_read(1)) == '\n': pass # skip blank lines
+        nl = False
+        while (c := self._b_read(1)) == '\n': nl = True # skip blank lines
         for finder in self.token_finders:
-            res = finder(c)
+            res = finder(c, nl)
             if callable(res): # `Token` class or `Token.part` method
                 return res(src=self.source, lno=self.lno, cno=self.cno)
             if res is self.MARK_TOKSUCC: return None
         raise ParseError(f'Unexpected character: {c!r}', source=self.source, lno=self.lno, cno=self.cno)
+
+    # Indentation manager
+    def consume_indentation(self) -> int:
+        '''Consumes indentation'''
+        count = 0
+        while self._b_chk_for(' '*self._indent_size, True): count += 1
+        if self._b_chk_for(' ', True):
+            raise ParseError(f'Extraneous leading space in indented block', source=self.source, lno=self.lno, cno=self.cno)
+        return count
 
     # Token finders
     def _tok_start_helper(self, c: str, target: str) -> bool:
         '''A helper function that checks for (and consumes) the `target` string in the buffer'''
         return target.startswith(c) and self._b_chk_for(target[1:], True)
 
-    def tok_eof(self, c: str) -> tokens.Token | None:
+    def tok_eof(self, c: str, nl: bool) -> tokens.Token | None:
         if not c: return tokens.EOF
         return None
-    def tok_pragma(self, c: str) -> object | None:
+    def tok_pragma(self, c: str, nl: bool) -> object | None:
         if not self._tok_start_helper(c, self.grammer.pragma.start): return None
         pnt,parg = (self._b_read_until(self.grammer.pragma.stop)
                     .split(self.grammer.pragma.vsep, 1))
@@ -137,22 +158,37 @@ class Tokenizer:
         pragma.pragma(ptype, pname, parg, tokenizer=self)
         return self.MARK_TOKSUCC
 
-    def tok_comment_single(self, c: str) -> tokens.Token | None:
+    def tok_comment_single(self, c: str, nl: bool) -> tokens.Token | None:
         if not self._tok_start_helper(c, self.grammer.comment.single): return None
         return tokens.Comment.part(self._b_read_until('\n', allow_eof=True))
-    def tok_comment_block(self, c: str) -> tokens.Token | None:
+    def tok_comment_block(self, c: str, nl: bool) -> tokens.Token | None:
         if not self._tok_start_helper(c, self.grammer.comment.block[0]): return None
         return tokens.Comment.part(self._b_read_until(self.grammer.comment.block[1]))
 
-    def tok_block_start(self, c: str) -> tokens.Token | None:
-        if self.grammer.block.indent:
-            raise NotImplementedError('Indentation-based blocks are not implemented yet')
-        if self._tok_start_helper(c, self.grammer.block.delim[0]):
+    ## Blocks
+    def tok_block_start(self, c: str, nl: bool) -> tokens.Token | None:
+        if self.grammer.block.delim and self._tok_start_helper(c, self.grammer.block.delim[0]):
             return tokens.Block.Start
         return None
-    def tok_block_end(self, c: str) -> tokens.Token | None:
-        if self.grammer.block.indent:
-            raise NotImplementedError('Indentation-based blocks are not implemented yet')
-        if self._tok_start_helper(c, self.grammer.block.delim[1]):
+    def tok_block_end(self, c: str, nl: bool) -> tokens.Token | None:
+        if self.grammer.block.delim and self._tok_start_helper(c, self.grammer.block.delim[1]):
             return tokens.Block.End
         return None
+    ### Indentation
+    def tok_indent_mark(self, c: str, nl: bool) -> tokens.Token | None:
+        if self.grammer.block.indent and nl and self._tok_start_helper(c, self.grammer.block.indent):
+            return tokens.Block.IndentMark
+        return None
+    def tok_indent(self, c: str, nl: bool) -> tokens.Token | None:
+        if not (self.grammer.block.indent and nl and (c == ' ')): return None
+        loc = self._b_backup(1)
+        if self._indent_size is None:
+            self._indent_size = 1
+            self._indent_size = self.consume_indentation()
+            print(self._indent_size)
+            lvl = 1
+        else: lvl = self.consume_indentation()
+        if not lvl: self._indent_size = None
+        if loc-1 == self.buffer.tell():
+            self._b_read(1)
+        return tokens.Block.Indent.part(lvl)

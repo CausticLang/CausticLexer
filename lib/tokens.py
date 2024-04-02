@@ -50,6 +50,7 @@ class Comment(_BaseValToken):
     '''Denotes a single or multi-line comment'''
     __slots__ = ()
 
+## Blocks
 class BlockStart(Token):
     '''Denotes the start of a block'''
     __slots__ = ()
@@ -59,3 +60,13 @@ class BlockEnd(Token):
 Block = SimpleNamespace(Start=BlockStart,
                         End=BlockEnd)
 del BlockStart, BlockEnd
+### Indentation
+class IndentMark(Token):
+    '''Denotes the start of an indent-style block'''
+    __slots__ = ()
+class Indent(_BaseValToken):
+    '''Denotes sensitive indentation'''
+    __slots__ = ()
+Block.IndentMark = IndentMark
+Block.Indent = Indent
+del IndentMark, Indent
