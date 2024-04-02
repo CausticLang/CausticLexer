@@ -137,7 +137,7 @@ class Grammer:
             if s.startswith('#'): continue # handle comments
             self.chone(s, source=source)
     def chone(self, kval: str, source: str | None = None) -> None:
-        try: name,val = s.split(':', 1) # extract name and value
+        try: name,val = kval.split(':', 1) # extract name and value
         except ValueError:
             raise GrammerSyntaxError(f'Could not parse statement {s!r}', source=source)
         try: val = self._convert_val(val)
