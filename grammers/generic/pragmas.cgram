@@ -2,5 +2,7 @@
 pragma.char: "$"
 # use "." to split "names" in pragma statements
 pragma.sep: "."
+# use ":" to split name from value
+pragma.delim: ":"
 
 # example: `$grammer.block.indent:disable`
