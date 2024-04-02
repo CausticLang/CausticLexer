@@ -77,6 +77,9 @@ class Grammer:
         self.sources = {}
         self.grammer = deepcopy(DEFAULT_GRAMMER)
 
+    def __getattr__(self, attr: str) -> typing.Any:
+        return getattr(self.grammer, attr)
+
     def load(self, file: PathLike | str, source: str | None = None) -> None:
         '''
             Loads the grammer from `path`, using `.apply()`
