@@ -85,14 +85,16 @@ class Tokenizer:
             index = -1
         self.buffer.seek(start)
         return self._b_read(index)
-    def _b_read_regex(self, patt: re.Pattern) -> str:
+    def _b_read_regex(self, patt: re.Pattern, fail: bool = False) -> re.Match | None:
         start = self.buffer.tell()
         text = self.buffer.read()
+        self.buffer.seek(start)
         mat = patt.match(text)
         if mat is None:
+            if not fail: return None
             raise ParseError(f'Expected pattern: {patt}', source=self.source, lno=self.lno, cno=self.cno)
-        self.buffer.seek(start + mat.end())
         self._b_read(mat.end())
+        return mat
 
     def _b_read(self, count: int) -> str:
         text = self.buffer.read(count)
