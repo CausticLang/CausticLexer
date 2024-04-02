@@ -124,6 +124,7 @@ class Grammer:
             return re.compile(val[1:-1])
         if val.lower() == 'disable': return False
         if val.lower() == 'enable': return True
+        if val.lower() == 'null': return None
         try: return literal_eval(val)
         except Exception:
             raise GrammerSyntaxError(f'Cannot parse value: {val!r}', source=None)
