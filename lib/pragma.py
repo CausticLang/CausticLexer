@@ -11,7 +11,7 @@ from . import tokenizer
 
 #> Header >/
 __all__ = ('PragmaError', 'pragma', 'types',
-           'grammer', 'print_')
+           'grammer', 'indentsize', 'print_')
 
 class PragmaError(Exception):
     '''Errors that occur that are directly related to pragmas'''
