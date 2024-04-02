@@ -131,21 +131,23 @@ class Grammer:
                 self.pragma(s[1:], source=source)
                 continue
             if s.startswith('#'): continue # handle comments
-            try: name,val = s.split(':', 1) # extract name and value
-            except ValueError:
-                raise GrammerSyntaxError(f'Could not parse statement {s!r}', source=source)
-            try: val = self._convert_val(val)
-            except GrammerSyntaxError as e:
-                e.source = source
-                raise e
-            self.sources[name] = source
-            name = name.split('.')
-            t = self.grammer
-            for n in name[:-1]:
-                if not hasattr(t, n):
-                    setattr(t, n, SimpleNamespace())
-                t = getattr(t, n)
-            setattr(t, name[-1], val)
+            self.chone(s, source=source)
+    def chone(self, kval: str, source: str | None = None) -> None:
+        try: name,val = s.split(':', 1) # extract name and value
+        except ValueError:
+            raise GrammerSyntaxError(f'Could not parse statement {s!r}', source=source)
+        try: val = self._convert_val(val)
+        except GrammerSyntaxError as e:
+            e.source = source
+            raise e
+        self.sources[name] = source
+        name = name.split('.')
+        t = self.grammer
+        for n in name[:-1]:
+            if not hasattr(t, n):
+                setattr(t, n, SimpleNamespace())
+            t = getattr(t, n)
+        setattr(t, name[-1], val)
 
     # pragmas
     def pragma(self, pragma: str, source: str | None = None) -> None:
