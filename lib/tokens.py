@@ -2,11 +2,12 @@
 
 #> Imports
 import typing
+from collections import abc as cabc
 #</Imports
 
 #> Header >/
 __all__ = ('Token',
-           'Comment')
+           'EOF', 'Comment')
 
 class Token:
     '''Base token type'''
@@ -16,6 +17,12 @@ class Token:
         self.src = src
         self.lno = lno
         self.cno = cno
+
+    @classmethod
+    def part(cls, *oargs, **okwargs) -> cabc.Callable[[...], typing.Self]:
+        def tokenbuilder(*iargs, **ikwargs) -> Token:
+            return type_(*oargs, *iargs, **okwargs, **ikwargs)
+        return tokenbuilder
 
 # Bases
 class _BaseValToken(Token):
@@ -34,6 +41,9 @@ class _BaseValsToken(Token):
         super().__init__(**kwargs)
 
 # Tokens
+class EOF(Token):
+    '''Denotes the end of a file'''
+    __slots__ = ()
 class Comment(_BaseValToken):
     '''Denotes a single or multi-line comment'''
     __slots__ = ()
