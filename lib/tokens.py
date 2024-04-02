@@ -9,7 +9,8 @@ from collections import abc as cabc
 #> Header >/
 __all__ = ('Token',
            'EOF', 'EOL', 'NewlineEOL', 'Comment',
-           'Block', 'Literal')
+           'Block', 'Literal',
+           'Identifier')
 
 class Token:
     '''Base token type'''
@@ -84,3 +85,8 @@ class IntegerLiteral(_BaseValToken):
     __slots__ = ()
 Literal = SimpleNamespace(Integer=IntegerLiteral)
 del IntegerLiteral
+
+## Identifier
+class Identifier(_BaseValToken):
+    '''Denotes an identifier'''
+    __slots__ = ()

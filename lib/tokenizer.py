@@ -64,6 +64,7 @@ class Tokenizer:
             self.tok_block_start, self.tok_block_end,
                 self.tok_indent_mark, self.tok_indent,
             self.tok_literal_integer,
+            self.tok_identifier,
         )
         self.last = self.indent_size = None
     def __del__(self):
@@ -218,3 +219,12 @@ class Tokenizer:
             self._b_read(1) # remove backed-up character
             return None
         return tokens.Literal.Integer.part(int(val.group(1), base=0))
+
+    ## Identifier
+    def tok_identifier(self, c: str, nl: bool) -> tokens.Token | None:
+        self._b_backup(1)
+        val = self._b_read_regex(self.grammer.identifier)
+        if val is None:
+            self._b_read(1)
+            return None
+        return tokens.Identifier.part(val.group(1))
