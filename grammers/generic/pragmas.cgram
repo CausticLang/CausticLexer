@@ -1,8 +1,11 @@
 # use "$" to begin "pragma" statements
-pragma.char: "$"
-# use "." to split "names" in pragma statements
-pragma.sep: "."
-# use ":" to split name from value
-pragma.delim: ":"
+pragma.start: "$"
+# use newline to end "pragma" statements
+pragma.stop:  "\n"
+
+# use "." to split type in pragma statements
+pragma.tsep: "."
+# use ":" to split type from value
+pragma.vsep: ":"
 
 # example: `$grammer.block.indent:disable`
