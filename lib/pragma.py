@@ -27,7 +27,15 @@ def grammer(name: cabc.Sequence[str], arg: str, tokenizer: 'tokenizer.Tokenizer'
     tokenizer.grammer.fn_chone(f'{".".join(name)}:{arg}', source=f'<pragma@{tokenizer.source or "<unknown>"}'
                                f' l{"?" if tokenizer.lno < 0 else tokenizer.lno}'
                                f' c{"?" if tokenizer.lno < 0 else tokenizer.cno}')
-
+def indentsize(name: cabc.Sequence[str], arg: str, tokenizer: 'tokenizer.Tokenizer') -> None:
+    if name:
+        raise PragmaError('Unexpected "name" value in indentsize pragma')
+    if not arg:
+        tokenizer.indent_size = None
+        return
+    try: arg = int(arg)
+    except ValueError:
+        raise PragmaError(f'Illegal argument to indentsize pragma: {arg!r}; expected nothing or an integer')
 def print_(name: cabc.Sequence[str], arg: str, tokenizer: 'tokenizer.Tokenizer') -> None:
     if name:
         raise PragmaError('Unexpected "name" value in print pragma')
@@ -35,5 +43,6 @@ def print_(name: cabc.Sequence[str], arg: str, tokenizer: 'tokenizer.Tokenizer')
 
 types = {
     'grammer': grammer,
+    'indentsize': indentsize,
     'print': print_,
 }
