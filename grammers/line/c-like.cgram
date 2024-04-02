@@ -1,0 +1,4 @@
+# disable using newlines to split lines
+line.newline.enable: disable
+
+line.eol: ";"

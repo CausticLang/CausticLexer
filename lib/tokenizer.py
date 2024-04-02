@@ -38,7 +38,7 @@ class Tokenizer:
         Tokenizes Caustic source code into tokens
         Note: holds state
     '''
-    __slots__ = ('grammer', 'buffer', 'source', 'lno', 'cno', 'token_finders', '_indent_size')
+    __slots__ = ('grammer', 'buffer', 'source', 'lno', 'cno', 'token_finders', '_last', '_indent_size')
 
     MARK_TOKSUCC = object()
 
@@ -53,13 +53,13 @@ class Tokenizer:
         self.source = None
         self.lno = self.cno = 0
         self.token_finders = (
-            self.tok_eof,
+            self.tok_eof, self.tok_eol,
             self.tok_pragma,
             self.tok_comment_single, self.tok_comment_block,
             self.tok_block_start, self.tok_block_end,
                 self.tok_indent_mark, self.tok_indent,
         )
-        self._indent_size = None
+        self._last = self._indent_size = None
     def __del__(self):
         self.buffer.close()
 
@@ -118,18 +118,19 @@ class Tokenizer:
         while True:
             tok = self.tokenize_pass_once()
             if tok is None: continue
-            if isinstance(tok, tuple):
-                yield from iter(tok) # multi-indent closing
-            else: yield tok
+            yield tok
             if isinstance(tok, tokens.EOF): return
     def tokenize_pass_once(self) -> tokens.Token | tuple[tokens.Token] | None:
         '''Moves over one read, returning a `Token` or `None`'''
-        nl = False
-        while (c := self._b_read(1)) == '\n': nl = True # skip blank lines
+        c = self._b_read(1)
+        nl = isinstance(self._last, tokens.NewlineEOL)
         for finder in self.token_finders:
             res = finder(c, nl)
             if callable(res): # `Token` class or `Token.part` method
-                return res(src=self.source, lno=self.lno, cno=self.cno)
+                res = res(src=self.source, lno=self.lno, cno=self.cno)
+            if isinstance(res, tokens.Token):
+                self._last = res
+                return res
             if res is self.MARK_TOKSUCC: return None
         raise ParseError(f'Unexpected character: {c!r}', source=self.source, lno=self.lno, cno=self.cno)
 
@@ -150,6 +151,15 @@ class Tokenizer:
     def tok_eof(self, c: str, nl: bool) -> tokens.Token | None:
         if not c: return tokens.EOF
         return None
+    def tok_eol(self, c: str, nl: bool) -> tokens.Token | None:
+        if self._tok_start_helper(c, self.grammer.line.eol): return tokens.EOL
+        if self.grammer.line.newline.enable:
+            if c == '\n': return tokens.NewlineEOL
+            if c == self.grammer.line.newline.cont:
+                if self._b_chk_for('\n', True): return None
+                raise ParseError('Unexpected line continuation character', source=self.source, lno=self.lno, cno=self.cno)
+        return None
+
     def tok_pragma(self, c: str, nl: bool) -> object | None:
         if not self._tok_start_helper(c, self.grammer.pragma.start): return None
         pnt,parg = (self._b_read_until(self.grammer.pragma.stop)

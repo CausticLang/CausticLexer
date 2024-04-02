@@ -8,8 +8,7 @@ from collections import abc as cabc
 
 #> Header >/
 __all__ = ('Token',
-           'EOF', 'Comment',
-           'Block')
+           'EOF', 'EOL', 'NewlineEOL', 'Comment', 'Block')
 
 class Token:
     '''Base token type'''
@@ -46,6 +45,13 @@ class _BaseValsToken(Token):
 class EOF(Token):
     '''Denotes the end of a file'''
     __slots__ = ()
+class EOL(Token):
+    '''Denotes the end of a line (A.E., ";" (and "\\n" with line.newline.enable))'''
+    __slots__ = ()
+class NewlineEOL(EOL):
+    '''Denotes the end of line, specifically by a newline'''
+    __slots__ = ()
+
 class Comment(_BaseValToken):
     '''Denotes a single or multi-line comment'''
     __slots__ = ()
