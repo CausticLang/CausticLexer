@@ -37,7 +37,7 @@ class CCfgParser(configparser.ConfigParser):
     def __init__(self, *args, include_dirs: typing.Iterable[Path] = (), pragma_pfx: str = '$', debug: typing.Literal[*range(-1, 4)] = 1,
                  allow_no_value: bool = True,
                  delimiters: tuple[str, ...] = ('=',), comment_prefixes: tuple[str, ...] = ('#',),
-                 interpolation: configparser.Interpolation | object = configparser.ExtendedInterpolation(), **kwargs):
+                 interpolation: configparser.Interpolation | object | None = None, **kwargs):
         self.include_dirs = list(include_dirs)
         self.pragma_pfx = pragma_pfx
         self.debug_lvl = debug
