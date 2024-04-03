@@ -54,9 +54,7 @@ class Tokenizer:
 
     def __init__(self, grammer: Grammer):
         self.grammer = grammer
-        self.buffer = io.StringIO()
         self.source = None
-        self.lno = self.cno = 0
         self.token_finders = (
             self.tok_eof, self.tok_eol,
             self.tok_pragma,
@@ -67,6 +65,10 @@ class Tokenizer:
             self.tok_identifier,
         )
         self.last = self.indent_size = None
+        self._init_sub()
+    def _init_sub(self):
+        self.lno = self.cno = 0
+        self.buffer = io.StringIO()
     def __del__(self):
         self.buffer.close()
 
@@ -121,6 +123,32 @@ class Tokenizer:
         if (not success) or (not consume_success):
             self.buffer.seek(curr)
         return success
+
+    def subparse(self, data: str) -> typing.Generator[tokens.Token, None, None]:
+        '''
+            Parse `data` with the current configuration
+            Not thread-safe in the slightest!
+            Note that changes to `.grammer`, `.last`, and `.indent_size` made
+                by the parsed data will be reflected in the main body
+        '''
+        bkp_buff = self.buffer
+        bkp_source = self.source
+        bkp_lno = self.lno; bkp_cno = self.cno
+        self._init_sub()
+        self.source = f'<subparser@{bkp_source}#L{bkp_lno}C{bkp_cno}>'
+        tok = None
+        try:
+            self.write(data)
+            for tok in self.tokenize():
+                if isinstance(tok, tokens.EOF):
+                    break
+                yield tok
+        finally:
+            self.buffer.close()
+            self.buffer = bkp_buff
+            self.source = bkp_source
+            self.lno = bkp_lno; self.cno = bkp_cno
+        if tok is not None: yield tok
 
     def tokenize(self) -> typing.Generator[tokens.Token, None, None]:
         '''Yields all tokens until an exception occurs or EOF is reached'''
