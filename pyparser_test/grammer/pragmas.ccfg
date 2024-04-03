@@ -1,0 +1,1 @@
+pragma = /\$(?P<type>\w+)(?: +(?P<args>.*?))?$/m
