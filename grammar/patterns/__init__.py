@@ -37,6 +37,8 @@ class PatternLoader(PatternComposer):
 
     def load(self, *files: str | os.PathLike | typing.BinaryIO) -> None:
         '''Loads each file in `files` (can be paths or binary file objects) as TOML'''
+        patts = {}
         for f in files:
             with (nullcontext(f) if isinstance(f, io.BufferedReader) else open(f, 'rb')) as f:
-                self.multiadd(self._convert(tomllib.load(f), replace=True))
+                patts.update(self._convert(tomllib.load(f)))
+        self.multiadd(patts, replace=True)
