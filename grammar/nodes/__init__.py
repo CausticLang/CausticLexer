@@ -46,7 +46,7 @@ class GrammarNode(ABC):
     def match(self, on: AbstractBufferMatcher) -> dict | None:
         '''Matches on the buffer-matcher `on`, if possible'''
 
-    @functools.wraps(match)
+    @functools.wraps(match, updated=())
     def __call__(self, *args, **kwargs) -> typing.Any:
         '''Executes `.match()`, but also checks `.failure`'''
         if (e := self.failure) is not None:
