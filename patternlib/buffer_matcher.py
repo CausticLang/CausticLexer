@@ -26,7 +26,7 @@ class AbstractBufferMatcher(ABC):
     @abstractproperty
     def buffer(self) -> cabc.Buffer: 'The underlying `memoryview`'
     @abstractproperty
-    def data(self) -> bytes: 'The `bytes` object corresponding to the `.buffer`
+    def data(self) -> bytes: 'The `bytes` object corresponding to the `.buffer`'
     @abstractproperty
     def pos(self) -> int: 'The current working index'
 
