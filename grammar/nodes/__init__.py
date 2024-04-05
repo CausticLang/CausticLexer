@@ -103,14 +103,13 @@ class PatternNode(GrammarNode):
             self.failure = ValueError(f'Required pattern {self.pname!r} is missing or incomplete')
             return
         self.patt = re.compile(self.bound.patterns[self.pname])
-        self.bound.patterns
         self.failure = None
 
-    def match(self, on: AbstractBufferMatcher) \
+    def match(self, on: AbstractBufferMatcher, return_mode: ReturnMode) \
     -> object | re.Match | dict[str, bytes] | tuple[bytes, ...] | bytes:
         m = on(self.patt.match)
         if m is None: return self.NOMATCH # -> object
-        match self.return_mode:
+        match return_mode:
             case self.ReturnMode.MATCH: return m # -> re.Match
             case self.ReturnMode.DICT: return m.groupdict() # -> dict[str, bytes]
             case self.ReturnMode.SEQ: return m.groups() # -> tuple[bytes, ...]
