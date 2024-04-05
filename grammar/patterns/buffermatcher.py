@@ -49,6 +49,13 @@ class AbstractBufferMatcher(ABC):
             If `amount` would bring the position below 0 or about the buffer's
                 maximum length, an `IndexError` is raised unless `allow_break`
         '''
+
+    def save_loc(self) -> typing.Any:
+        '''Exports the location for importing later via `.load_loc()`'''
+        return self.pos
+    def load_loc(self, loc: int) -> None:
+        '''Loads a location exported by `.save_loc()`'''
+        self.pos = loc
         
     
 class BufferMatcher_DynamicLCNo(AbstractBufferMatcher):
@@ -118,3 +125,8 @@ class BufferMatcher_StaticLCNo(BufferMatcher_DynamicLCNo):
             self.lno = super().lno
             self.cno = super().cno
         return buff
+
+    def save_loc(self) -> tuple[int, int, int]:
+        return (self.pos, self.lno, self.cno)
+    def load_loc(self, loc: tuple[int, int, int]) -> None:
+        self.pos,self.lno,self.cno = loc
