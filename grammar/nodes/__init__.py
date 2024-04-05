@@ -28,6 +28,9 @@ class GrammarNode(ABC):
 
     failure: Exception | None = property(lambda _: None)
 
+    def __init_subclass__(cls):
+        if isinstance(__all__, tuple): return
+        __all__.append(cls.__name__)
     def __init__(self, bind: 'nodemgr.NodeManager', name: str, *args, **kwargs):
         self.bound = bind
         self.name = name
@@ -47,6 +50,30 @@ class GrammarNode(ABC):
         if (e := self.failure) is not None:
             raise exceptions.NodeNotReadyException(self.name, f'Node {self.name!r} is not ready') from e
         return self.match(*args, **kwargs)
+
+# Nodes
+class PatternNode(GrammarNode):
+    '''References a pattern'''
+    __slots__ = ('failure', 'pname', 'patt')
+
+    pname: str
+    patt: re.Pattern | None
+
+    def setup(self, *, patt: str) -> None:
+        self.failure = Exception('Node was never compiled')
+        self.pname = patt
+        self.patt = None
+
+    def compile(self) -> None:
+        if not self.bound.patterns.is_complete(self.pname):
+            self.failure = ValueError(f'Required pattern {self.pname!r} is missing or incomplete')
+            return
+        self.patt = re.compile(self.bound.patterns[self.pname])
+        self.bound.patterns
+        self.failure = None
+
+    def match(self, on: AbstractBufferMatcher) -> tuple[str, re.Match] | None:
+        return on(self.patt.match)
 #</Header
 
 #> Package >/
