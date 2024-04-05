@@ -23,7 +23,7 @@ class Grammar:
 
     def __init__(self, *, nodes: dict[str, nodes.GrammarNode | None] = None,
                  patts: patterns.PatternLoader | type[patterns.PatternLoader] | None = None):
-        self.patterns = (PatternLoader() if patts is None
+        self.patterns = (patterns.PatternLoader() if patts is None
                          else patterns() if isinstance(patterns, type) else patterns)
         self.nodes = ({} if nodes is None else nodes)
 
