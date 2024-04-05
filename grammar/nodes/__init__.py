@@ -11,6 +11,8 @@ from abc import ABC, abstractmethod, abstractproperty
 
 from . import exceptions
 
+from .. import __init__ as _root
+
 from ..patterns.buffermatcher import AbstractBufferMatcher
 #</Imports
 
@@ -22,7 +24,7 @@ class GrammarNode(ABC):
     '''Base grammar node'''
     __slots__ = ('bound', 'name', 'args')
 
-    bound: 'nodemgr.NodeManager'
+    bound: '_root.Grammar'
     name: str
     args: tuple[tuple, dict]
 
@@ -31,7 +33,7 @@ class GrammarNode(ABC):
     def __init_subclass__(cls):
         if isinstance(__all__, tuple): return
         __all__.append(cls.__name__)
-    def __init__(self, bind: 'nodemgr.NodeManager', name: str, *args, **kwargs):
+    def __init__(self, bind: '_root.Grammar', name: str, *args, **kwargs):
         self.bound = bind
         self.name = name
         self.args = (args, kwargs)
