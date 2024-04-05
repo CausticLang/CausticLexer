@@ -1,3 +1,0 @@
-[grammer]
-$include:./identifier
-$include:./pragmas

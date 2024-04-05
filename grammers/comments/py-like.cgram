@@ -1,4 +1,0 @@
-comment.single: "#"
-
-# Nim-like block comments
-comment.block: "#[","]#"

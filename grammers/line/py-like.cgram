@@ -1,7 +1,0 @@
-# allow using C-like line splitting as well
-$load line/c-like.cgram
-
-# enable using newlines to split lines
-line.newline.enable: enable
-# use a backslash as the newline continuation character
-line.newline.cont:   "\\"
