@@ -1,6 +1,10 @@
 #!/bin/python3
 
-'''Provides the `PatternLoader` class'''
+'''
+    Provides the `PatternLoader` class for loading patterns,
+        as well as composing them through `PatternComposer`
+    Also provides buffer matchers
+'''
 
 #> Imports
 import io
@@ -9,10 +13,12 @@ import typing
 import tomllib
 from contextlib import nullcontext
 from regex_compose import PatternComposer
+
+from . import buffermatcher
 #</Imports
 
 #> Header >/
-__all__ = ('PatternLoader',)
+__all__ = ('PatternLoader', 'buffermatcher')
 
 class PatternLoader(PatternComposer):
     '''A subclass of `PatternComposer` that allows loading of patterns from TOML files'''

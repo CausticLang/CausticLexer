@@ -14,7 +14,7 @@ from collections import abc as cabc
 #</Imports
 
 #> Header >/
-__slots__ = ('AbstractBufferMatcher', 'BufferMatcher_DynamicLCNo', 'BufferMatcher_StaticLCNo')
+__all__ = ('AbstractBufferMatcher', 'BufferMatcher_DynamicLCNo', 'BufferMatcher_StaticLCNo')
 
 class AbstractBufferMatcher(ABC):
     '''
