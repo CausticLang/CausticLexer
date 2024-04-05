@@ -12,6 +12,7 @@ import os
 import typing
 import tomllib
 from contextlib import nullcontext
+from collections import abc as cabc
 from regex_compose import PatternComposer
 
 from . import buffermatcher
@@ -28,7 +29,7 @@ class PatternLoader(PatternComposer):
         super().__init__(bytes_mode=True)
 
     @classmethod
-    def _convert(cls, target: dict[str, str | dict], *, _name: tuple[str, ...] = ()) -> typing.Iterable[tuple[str, bytes]]:
+    def _convert(cls, target: dict[str, str | dict], *, _name: tuple[str, ...] = ()) -> cabc.Iterable[tuple[str, bytes]]:
         for k,v in target.items():
             if isinstance(v, dict):
                 yield from cls._convert(v, _name=(_name+(k,)))
