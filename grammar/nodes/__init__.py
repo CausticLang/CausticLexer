@@ -26,12 +26,12 @@ class GrammarNode(ABC):
 
     @abstractproperty
     @classmethod
-    def ReturnMode(cls) -> type[Enum]: pass
+    def ReturnMode(cls) -> type[Enum] | None: pass
 
     bound: '_root.Grammar'
     name: str
     args: tuple[tuple, dict]
-    return_mode: Enum
+    return_mode: Enum | None
 
     failure: Exception | None = property(lambda _: None)
 
