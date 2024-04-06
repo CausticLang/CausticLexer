@@ -44,7 +44,7 @@ class PatternNode(GrammarNode):
         self.patt = re.compile(self.bound.patterns[self.pname])
         self.failure = None
 
-    def match(self, on: AbstractBufferMatcher, return_mode: ReturnMode) \
+    def match(self, on: AbstractBufferMatcher, *, return_mode: ReturnMode) \
     -> object | re.Match | dict[str, bytes] | tuple[bytes, ...] | bytes:
         m = on(self.patt.match)
         if m is None: return self.NOMATCH # -> object
