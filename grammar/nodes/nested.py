@@ -160,6 +160,7 @@ class RepeatNode(GrammarNode):
         if self.node.failure is not None:
             self.failure = ValueError(f'Required node {self.node_name!r} failed to compile')
             self.failure.__context__ = self.node.failure
+        self.failure = None
 
     def match(self, on: AbstractBufferMatcher, *, return_mode: ReturnMode) \
     -> object | tuple[typing.Any, ...] | (typing.Any | None) | (typing.Any | None) | int:
