@@ -2,9 +2,8 @@
 
 #> Header >/
 __all__ = ('NodeException',
-           'NodeMissingError', 'BaseNodeMissingError', 'CompiledNodeMissingError',
-           'NodeExistsError',
-           'NodeNotReadyException')
+           'NodeMissingError', 'NodeExistsError',
+           'NodeNotReadyException', 'DependencyNodeNotReadyError')
 
 class NodeException(Exception):
     '''Base exception for nodes'''
@@ -19,17 +18,13 @@ class _NamedNodeException(NodeException):
 class NodeMissingError(_NamedNodeException, KeyError):
     '''For when a needed node is missing'''
     __slots__ = ()
-class BaseNodeMissingError(NodeMissingError):
-    '''For when a needed node base is missing'''
-    __slots__ = ()
-class CompiledNodeMissingError(NodeMissingError):
-    '''For when a needed (partially-)compiled node is missing'''
-    __slots__ = ()
-
 class NodeExistsError(_NamedNodeException):
     '''For when a node exists when it shouldn't'''
     __slots__ = ()
 
 class NodeNotReadyException(_NamedNodeException):
     '''For when a node isn't ready'''
+    __slots__ = ()
+class DependencyNodeNotReadyError(NodeNotReadyException):
+    '''For when a node required by another node isn't ready'''
     __slots__ = ()
