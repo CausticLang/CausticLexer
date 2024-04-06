@@ -32,7 +32,7 @@ class PatternNode(GrammarNode):
     patt: re.Pattern | None
     return_mode: ReturnMode
 
-    def setup(self, *, patt: str) -> None:
+    def setup(self, patt: str) -> None:
         self.failure = Exception('Node was never compiled')
         self.pname = patt
         self.patt = None
