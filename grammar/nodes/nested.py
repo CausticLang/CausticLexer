@@ -178,6 +178,7 @@ class RepeatNode(GrammarNode):
                   else range(self.min, self.max)):
             m = self.node(on)
             if m is self.NOMATCH: break
+            matches.append(m)
         # return
         match return_mode:
             case self.ReturnMode.SEQ: return tuple(matches) # -> tuple[typing.Any, ...]
