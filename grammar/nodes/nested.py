@@ -103,13 +103,11 @@ class ListNode(GrammarNode):
     -> object | tuple[typing.Any, ...] | dict[str, typing.Any] | (tuple[typing.Any, ...] | dict[str, typing.Any] | None | typing.Any):
         orig_pos = on.save_loc()
         matches = []
-        success = False
         for name in self.order:
             matches.append(self.nodes[name](on))
-        else: success = bool(self.order)
-        if not success:
-            on.load_loc(orig_pas) # backtrack
-            return self.NOMATCH # -> object
+            if matches[-1] is self.NOMATCH:
+                on.load_loc(orig_pas) # backtrack
+                return self.NOMATCH # -> object
         match return_mode:
             case self.ReturnMode.SEQ: return tuple(matches) # -> tuple[typing.Any, ...]
             case self.ReturnMode.DICT: return dict(zip(self.order, matches)) # -> dict[str, typing.Any]
