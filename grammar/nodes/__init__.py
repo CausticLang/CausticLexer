@@ -47,6 +47,9 @@ class GrammarNode(ABC):
             else: self.return_mode = return_mode
         if callable(s := getattr(self, 'setup', None)): s(*args, **kwargs)
 
+    def setup(self) -> None:
+        '''Executed after initialization, with *args and **kwargs passed to it'''
+
     def compile(self) -> None:
         '''(Re)compilation callback'''
 
