@@ -4,6 +4,7 @@
 
 #> Imports
 import typing
+import itertools
 from enum import Enum
 
 from . import GrammarNode
@@ -12,7 +13,7 @@ from ..patterns.buffermatcher import AbstractBufferMatcher
 #</Imports
 
 #> Header >/
-__all__ = ('UnionNode', 'ListNode')
+__all__ = ('UnionNode', 'ListNode', 'RepeatNode')
 
 class UnionNode(GrammarNode):
     '''
@@ -117,3 +118,68 @@ class ListNode(GrammarNode):
                 if isinstance(matches[0], cabc.Mapping):
                     return dict.update(*(matches))
                 return sum((m for m in matches[1:]), start=matches[0])
+
+class RepeatNode(GrammarNode):
+    '''
+        Matches a pattern multiple times, between `min` and `max`
+        Note: backtracks if more than 1 and less than `min` nodes match
+
+        If `max` is `None`, there is no upper bound
+
+        `return_mode` affects the return value of `.match()`:
+          - `SEQ`: return a tuple containing all matches
+          - `FIRST`: returns the first match (note that subsequent matches are still made),
+            returning `None` if there are no matches and `min` is `0`
+          - `LAST`: returns the last match, returning `None` upon no matches if `min` is `0`
+          - `COUNT`: returns the amount of matches
+    '''
+    __slots__ = ('failure', 'node_name', 'node', 'min', 'max')
+
+    ReturnMode = Enum('ReturnMode', ('SEQ', 'FIRST', 'LAST', 'COUNT'))
+
+    node_name: str | None
+    node: GrammarNode | None
+    min: int
+    max: int | None
+
+    def setup(self, node: str, *, min: int = 0, max: int | None = None) -> None:
+        self.failure = Exception('Node was never compiled')
+        self.node_name = node
+        self.node = None
+        self.min = min
+        self.max = max
+        if (self.max is not None) and (self.min >= self.max):
+            raise ValueError(f'min {self.min!r} cannot be higher than or equal to max {self.max!r}')
+
+    def compile(self) -> None:
+        if self.node_name is None: return
+        if self.node_name not in self.bound.nodes:
+            self.failure = KeyError(f'Required node {self.node_name!r} is missing')
+            return
+        self.node = self.bound.nodes[self.node_name]
+        if self.node.failure is not None:
+            self.failure = ValueError(f'Required node {self.node_name!r} failed to compile')
+            self.failure.__context__ = self.node.failure
+
+    def match(self, on: AbstractBufferMatcher, *, return_mode: ReturnMode) \
+    -> object | tuple[typing.Any, ...] | (typing.Any | None) | (typing.Any | None) | int:
+        save = on.save_loc()
+        matches = []
+        # get up to minimum
+        if self.min:
+            for _ in range(self.min):
+                matches.append(self.node(on))
+                if matches[-1] is None:
+                    on.load_loc(save) # backtrack
+                    return self.NOMATCH # -> object
+        # get up to maximum
+        for _ in (itertools.repeat(None) if self.max is None
+                  else range(self.min, self.max)):
+            m = self.node(on)
+            if m is self.NOMATCH: break
+        # return
+        match return_mode:
+            case self.ReturnMode.SEQ: return tuple(matches) # -> tuple[typing.Any, ...]
+            case self.ReturnMode.FIRST: return matches[0] if matches else None # -> (typing.Any | None)
+            case self.ReturnMode.LAST: return matches[-1] if matches else None # -> (typing.Any | None)
+            case self.ReturnMode.COUNT: return len(matches) # -> int
