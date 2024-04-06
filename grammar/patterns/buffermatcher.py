@@ -86,7 +86,7 @@ class BufferMatcher_DynamicLCNo(AbstractBufferMatcher):
     def __call__(self, func: cabc.Callable[[cabc.Buffer], re.Match | None]) -> re.Match | None:
         m = func(self.buffer[self.pos:])
         if m is None: return None
-        self.pos += m.end()-1
+        self.pos += m.end()
         return m
     def step(self, amount: int = -1, *, allow_breakout: bool = False) -> cabc.Buffer:
         newp = self.pos + amount
