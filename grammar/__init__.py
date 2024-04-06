@@ -43,7 +43,7 @@ class Grammar:
         prev_succ = -1
         successes = set()
         while prev_succ != (prev_succ := len(successes)):
-            for n in nodes:
+            for n in nodes-successes:
                 self.nodes[n].compile()
                 if self.nodes[n].failure is None:
                     successes.add(n)
