@@ -15,7 +15,7 @@ from .. import __init__ as _root
 from ..patterns.buffermatcher import AbstractBufferMatcher
 #</Imports
 
-__all__ = ('GrammarNode', 'flat', 'nested') + exceptions.__all__
+__all__ = ('GrammarNode', 'flat', 'nested', 'meta') + exceptions.__all__
 
 #> Header
 class GrammarNode(ABC):
@@ -78,3 +78,4 @@ from .exceptions import *
 
 from . import flat
 from . import nested
+from . import meta
