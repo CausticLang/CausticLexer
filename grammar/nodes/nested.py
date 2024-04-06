@@ -170,7 +170,7 @@ class RepeatNode(GrammarNode):
         if self.min:
             for _ in range(self.min):
                 matches.append(self.node(on))
-                if matches[-1] is None:
+                if matches[-1] is self.NOMATCH:
                     on.load_loc(save) # backtrack
                     return self.NOMATCH # -> object
         # get up to maximum
