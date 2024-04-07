@@ -3,6 +3,7 @@
 '''Provides the framework for Caustic's grammar management'''
 
 #> Imports
+import operator
 from collections import abc as cabc
 #</Imports
 
@@ -43,8 +44,12 @@ class Grammar:
         prev_succ = -1
         successes = set()
         while prev_succ != (prev_succ := len(successes)):
-            for n in nodes-successes:
-                self.nodes[n].compile()
-                if self.nodes[n].failure is None:
-                    successes.add(n)
+            for node in sorted(map(self.nodes.__getitem__, nodes - successes),
+                               key=operator.attrgetter('compile_order_hint')):
+                assert self.nodes[node.name] is node
+                node.compile()
+                if node.failure is None:
+                    successes.add(node.name)
+                else:
+                    node.compile_order_hint += 1
         return nodes - successes
