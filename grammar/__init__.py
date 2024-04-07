@@ -38,9 +38,14 @@ class Grammar:
         succs = frozenset((n for n in nodes if self.nodes[n].failure is None))
         return (succs, nodes - succs)
 
-    def compile(self, nodes: cabc.Sequence[str] | None = None) -> frozenset[str]:
-        '''Compiles nodes, returning a frozenset of node names that failed compilation'''
+    def compile(self, nodes: cabc.Sequence[str] | None = None, *, needed: bool = True) -> frozenset[str]:
+        '''
+            Compiles nodes, returning a frozenset of node names that failed compilation
+            If `needed` is true, then only compiles nodes that have failed to compile
+        '''
         nodes = frozenset(self.nodes.keys() if nodes is None else nodes)
+        if needed:
+            nodes = frozenset(filter(lambda k: self.nodes[k].failure is not None, nodes))
         prev_succ = -1
         successes = set()
         while prev_succ != (prev_succ := len(successes)):
