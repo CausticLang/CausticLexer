@@ -5,7 +5,9 @@
 #> Imports
 import typing
 
-from . import GrammarNode
+from . import base
+
+from . import GrammarMark
 
 from ..patterns.buffermatcher import AbstractBufferMatcher
 #</Imports
@@ -13,70 +15,54 @@ from ..patterns.buffermatcher import AbstractBufferMatcher
 #> Header >/
 __all__ = ('TrueNode', 'FalseNode', 'NotNode')
 
-class TrueNode(GrammarNode):
+class TrueNode(base.NeverNestedNode):
     '''Always matches, returning `val` without consuming anything'''
     __slots__ = ('val',)
+
+    BASE_COMPILE_ORDER_HINT = -900
 
     ReturnMode: None = None
     return_mode: None = None
 
     val: typing.Any
 
-    failure: None = None
-
-    def setup(self, val: typing.Any) -> None:
-        if val is self.NOMATCH:
-            raise ValueError('val cannot be NOMATCH (maybe you meant to use FalseNode?)')
+    failure: None
+    
+    def setup(self, *, val: typing.Any, **kwargs) -> None:
+        super().setup(**kwargs)
+        if isinstance(val, GrammarMark):
+            raise TypeError('val cannot be a GrammarMark')
         self.val = val
 
     def match(self, on: AbstractBufferMatcher) -> typing.Any:
         return self.val
-class FalseNode(GrammarNode):
+class FalseNode(base.NeverNestedNode):
     '''Never matches'''
     __slots__ = ()
 
-    ReturnMode: None = None
-    return_mode: None = None
+    BASE_COMPILE_ORDER_HINT = -900
 
-    failure: None = None
+    def match(self, on: AbstractBufferMatcher) -> GrammarMark:
+        return GrammarMark.NO_MATCH
 
-    def match(self, on: AbstractBufferMatcher) -> object:
-        return self.NOMATCH
-
-class NotNode(GrammarNode):
+class NotNode(base.SingleNestedNode):
     '''
-        Only matches (returning `val`) if the given node does not match
+        Only matches (returning `val`) if the given node `node` does not match
         Note: backtracks if the given node does match
     '''
-    __slots__ = ('failure', 'node_name', 'node', 'val')
+    __slots__ = ('failure', 'val')
 
-    ReturnMode: None = None
-    return_mode: None = None
-
-    node_name: str
-    node: GrammarNode | None
     val: typing.Any
 
-    def setup(self, node: str, val: typing.Any) -> None:
-        self.failure = Exception('Node was never compiled')
-        self.node_name = node
-        if val is self.NOMATCH:
-            raise ValueError('val cannot be NOMATCH')
+    def setup(self, *, val: typing.Any, **kwargs) -> None:
+        super().setup(**kwargs)
+        if isinstance(val, GrammarMark):
+            raise TypeError('val cannot be a GrammarMark')
         self.val = val
 
-    def compile(self) -> None:
-        if self.node_name not in self.bound.nodes:
-            self.failure = KeyError(f'Required node {node!r} is missing')
-            return
-        self.node = self.bound.nodes[self.node_name]
-        if self.node.failure is not None:
-            self.failure = ValueError(f'Required node {node!r} failed to compile')
-            self.failure.__context__ = self.node.failure
-        self.failure = None
-
-    def match(self, on: AbstractBufferMatcher) -> object | typing.Any:
+    def match(self, on: AbstractBufferMatcher) -> GrammarMark | typing.Any:
         save = on.save_loc()
-        if self.node(on) is self.NOMATCH:
+        if self.node(on) is GrammarMark.NO_MATCH:
             return self.val # -> typing.Any
         on.load_loc(save) # backtrack
-        return self.NOMATCH # -> object
+        return GrammarMark.NO_MATCH # -> GrammarMark

@@ -6,8 +6,11 @@
 import typing
 import itertools
 from enum import Enum
+from collections import abc as cabc
 
-from . import GrammarNode
+from . import base
+
+from . import GrammarMark
 
 from ..patterns.buffermatcher import AbstractBufferMatcher
 #</Imports
@@ -15,7 +18,7 @@ from ..patterns.buffermatcher import AbstractBufferMatcher
 #> Header >/
 __all__ = ('UnionNode', 'ListNode', 'RepeatNode')
 
-class UnionNode(GrammarNode):
+class UnionNode(base.NodeWithReturnMode, base.MultiNestedNode):
     '''
         References multiple other nodes in a union, matching one of any of them
 
@@ -25,42 +28,24 @@ class UnionNode(GrammarNode):
           - `NAME`: returns only the name, `'name'`
           - `VAL`: returns only the value, `match`
     '''
-    __slots__ = ('failure', 'nodes')
+    __slots__ = ()
 
     ReturnMode = Enum('ReturnMode', ('PAIR', 'STRUCT', 'NAME', 'VAL'))
-
-    nodes: dict[str, GrammarNode | None]
     return_mode: ReturnMode
 
-    def setup(self, *nodes: str) -> None:
-        self.failure = Exception('Node was never compiled')
-        self.nodes = dict.fromkeys(nodes, None)
-
-    def compile(self) -> None:
-        for node in self.nodes.keys():
-            if node not in self.bound.nodes:
-                self.failure = KeyError(f'Required node {node!r} is missing')
-                return
-            n = self.nodes[node] = self.bound.nodes[node]
-            if n.failure is not None:
-                self.failure = ValueError(f'Required node {node!r} failed to compile')
-                self.failure.__context__ = n.failure
-                return
-        self.failure = None
-
     def match(self, on: AbstractBufferMatcher, *, return_mode: ReturnMode) \
-    -> object | tuple[str, typing.Any] | dict[typing.Literal['name', 'val'], typing.Any] | str | typing.Any:
+    -> GrammarMark | tuple[str, typing.Any] | dict[typing.Literal['name', 'val'], typing.Any] | str | typing.Any:
         for name,node in self.nodes.items():
-            if (m := node(on)) is not self.NOMATCH:
+            if (m := node(on)) is not GrammarMark.NO_MATCH:
                 break
-        else: return self.NOMATCH # -> object
+        else: return GrammarMark.NO_MATCH # -> GrammarMark
         match self.return_mode:
             case self.ReturnMode.PAIR: return (name, m) # -> tuple[str, typing.Any]
             case self.ReturnMode.STRUCT: return {'name': name, 'val': m} # -> dict[typing.Literal['name', 'val'], typing.Any]
             case self.ReturnMode.NAME: return name # -> str
             case self.ReturnMode.VAL: return m # -> typing.Any
 
-class ListNode(GrammarNode):
+class ListNode(base.NodeWithReturnMode, base.MultiNestedNode):
     '''
         References multiple other nodes in order,
             only matching when all of them match
@@ -75,40 +60,28 @@ class ListNode(GrammarNode):
             Note: this will fail if not all nodes share a return type compatible with tuple (`*`, `Sequence`) or dict (`**`, `Mapping`)
             Note: this will return `None` if there are no nodes, and the value of the only node if there is only one node
     '''
-    __slots__ = ('failure', 'nodes', 'order')
+    __slots__ = ('order',)
+
+    BASE_COMPILE_ORDER_HINT = base.MultiNestedNode.BASE_COMPILE_ORDER_HINT + 50
 
     ReturnMode = Enum('ReturnMode', ('SEQ', 'DICT', 'UNPACK'))
-
-    nodes: dict[str, GrammarNode | None]
-    order: tuple[str, ...]
     return_mode: ReturnMode
 
-    def setup(self, *nodes: str) -> None:
-        self.failure = Exception('Node was never compiled')
-        self.order = nodes
-        self.nodes = dict.fromkeys(nodes, None)
+    order: tuple[str, ...]
 
-    def compile(self) -> None:
-        for node in self.order:
-            if node not in self.bound.nodes:
-                self.failure = KeyError(f'Required node {node!r} is missing')
-                return
-            n = self.nodes[node] = self.bound.nodes[node]
-            if n.failure is not None:
-                self.failure = ValueError(f'Required node {node!r} failed to compile')
-                self.failure.__context__ = n.failure
-                return
-        self.failure = None
+    def setup(self, *, nodes: cabc.Sequence[str], **kwargs) -> None:
+        super().setup(nodes=nodes, **kwargs)
+        self.order = tuple(nodes)
 
     def match(self, on: AbstractBufferMatcher, *, return_mode: ReturnMode) \
-    -> object | tuple[typing.Any, ...] | dict[str, typing.Any] | (tuple[typing.Any, ...] | dict[str, typing.Any] | None | typing.Any):
+    -> GrammarMark | tuple[typing.Any, ...] | dict[str, typing.Any] | (tuple[typing.Any, ...] | dict[str, typing.Any] | None | typing.Any):
         orig_pos = on.save_loc()
         matches = []
         for name in self.order:
             matches.append(self.nodes[name](on))
-            if matches[-1] is self.NOMATCH:
+            if matches[-1] is GrammarMark.NO_MATCH:
                 on.load_loc(orig_pas) # backtrack
-                return self.NOMATCH # -> object
+                return GrammarMark.NO_MATCH # -> GrammarMark
         match return_mode:
             case self.ReturnMode.SEQ: return tuple(matches) # -> tuple[typing.Any, ...]
             case self.ReturnMode.DICT: return dict(zip(self.order, matches)) # -> dict[str, typing.Any]
@@ -119,9 +92,9 @@ class ListNode(GrammarNode):
                     return dict.update(*(matches))
                 return sum((m for m in matches[1:]), start=matches[0])
 
-class RepeatNode(GrammarNode):
+class RepeatNode(base.NodeWithReturnMode, base.SingleNestedNode):
     '''
-        Matches a pattern multiple times, between `min` and `max`
+        Matches a node multiple times, between `min` and `max`
         Note: backtracks if more than 1 and less than `min` nodes match
 
         If `max` is `None`, there is no upper bound
@@ -133,51 +106,44 @@ class RepeatNode(GrammarNode):
           - `LAST`: returns the last match, returning `None` upon no matches if `min` is `0`
           - `COUNT`: returns the amount of matches
     '''
-    __slots__ = ('failure', 'node_name', 'node', 'min', 'max')
+    __slots__ = ('min', 'max')
+
+    BASE_COMPILE_ORDER_HINT = base.MultiNestedNode.BASE_COMPILE_ORDER_HINT - 50
 
     ReturnMode = Enum('ReturnMode', ('SEQ', 'FIRST', 'LAST', 'COUNT'))
+    return_mode: ReturnMode
 
-    node_name: str | None
-    node: GrammarNode | None
     min: int
     max: int | None
 
-    def setup(self, node: str, *, min: int = 0, max: int | None = None) -> None:
-        self.failure = Exception('Node was never compiled')
-        self.node_name = node
-        self.node = None
+    def setup(self, *, min: int = 0, max: int | None = None, **kwargs) -> None:
+        super().setup(**kwargs)
         self.min = min
         self.max = max
-        if (self.max is not None) and (self.min >= self.max):
-            raise ValueError(f'min {self.min!r} cannot be higher than or equal to max {self.max!r}')
-
-    def compile(self) -> None:
-        if self.node_name is None: return
-        if self.node_name not in self.bound.nodes:
-            self.failure = KeyError(f'Required node {self.node_name!r} is missing')
-            return
-        self.node = self.bound.nodes[self.node_name]
-        if self.node.failure is not None:
-            self.failure = ValueError(f'Required node {self.node_name!r} failed to compile')
-            self.failure.__context__ = self.node.failure
-        self.failure = None
+        if self.min < 0:
+            raise ValueError(f'Invalid value for min: {self.min!r}, must not be negative')
+        if self.max is not None:
+            if self.max < 0:
+                raise ValueError(f'Invalid value for max: {self.max!r}, must not be negative')
+            if self.max <= self.min:
+                raise ValueError(f'Invalid values for min/max: max of {self.max!r} is lower or equal to min of {self.min!r}')
 
     def match(self, on: AbstractBufferMatcher, *, return_mode: ReturnMode) \
-    -> object | tuple[typing.Any, ...] | (typing.Any | None) | (typing.Any | None) | int:
+    -> GrammarMark | tuple[typing.Any, ...] | (typing.Any | None) | (typing.Any | None) | int:
         save = on.save_loc()
         matches = []
         # get up to minimum
         if self.min:
             for _ in range(self.min):
                 matches.append(self.node(on))
-                if matches[-1] is self.NOMATCH:
+                if matches[-1] is GrammarMark.NO_MATCH:
                     on.load_loc(save) # backtrack
-                    return self.NOMATCH # -> object
+                    return GrammarMark.NO_MATCH # -> GrammarMark
         # get up to maximum
         for _ in (itertools.repeat(None) if self.max is None
                   else range(self.min, self.max)):
             m = self.node(on)
-            if m is self.NOMATCH: break
+            if m is GrammarMark.NO_MATCH: break
             matches.append(m)
         # return
         match return_mode:

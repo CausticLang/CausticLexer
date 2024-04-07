@@ -6,7 +6,10 @@
 import re
 from enum import Enum
 
-from . import GrammarNode
+from . import base
+from . import exceptions
+
+from . import GrammarMark
 
 from ..patterns.buffermatcher import AbstractBufferMatcher
 #</Imports
@@ -14,7 +17,7 @@ from ..patterns.buffermatcher import AbstractBufferMatcher
 #> Header >/
 __all__ = ('PatternNode',)
 
-class PatternNode(GrammarNode):
+class PatternNode(base.NodeWithReturnMode, base.NeverNestedNode):
     '''
         References a pattern
 
@@ -32,8 +35,10 @@ class PatternNode(GrammarNode):
     patt: re.Pattern | None
     return_mode: ReturnMode
 
-    def setup(self, patt: str) -> None:
-        self.failure = Exception('Node was never compiled')
+    def setup(self, patt: str, **kwargs) -> None:
+        super().setup(**kwargs)
+        self.failure = exceptions.NodeNotReadyException(self.name,
+            'This node requires a pattern, but has not been compiled')
         self.pname = patt
         self.patt = None
 
@@ -45,9 +50,9 @@ class PatternNode(GrammarNode):
         self.failure = None
 
     def match(self, on: AbstractBufferMatcher, *, return_mode: ReturnMode) \
-    -> object | re.Match | dict[str, bytes] | tuple[bytes, ...] | bytes:
+    -> GrammarMark | re.Match | dict[str, bytes] | tuple[bytes, ...] | bytes:
         m = on(self.patt.match)
-        if m is None: return self.NOMATCH # -> object
+        if m is None: return self.GrammarMark.NO_MATCH # -> GrammarMark
         match return_mode:
             case self.ReturnMode.MATCH: return m # -> re.Match
             case self.ReturnMode.DICT: return m.groupdict() # -> dict[str, bytes]
