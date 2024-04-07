@@ -43,6 +43,7 @@ class PatternNode(base.NodeWithReturnMode, base.NeverNestedNode):
         self.patt = None
 
     def compile(self) -> None:
+        if self.check_unbound(): return
         if not self.bound.patterns.is_complete(self.pname):
             self.failure = ValueError(f'Required pattern {self.pname!r} is missing or incomplete')
             return

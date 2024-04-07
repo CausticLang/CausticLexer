@@ -42,7 +42,7 @@ class GrammarNode(metaclass=ABCMeta):
     BASE_COMPILE_ORDER_HINT: typing.ClassVar[int] = 0
     compile_order_hint: int
 
-    bound: '_root.Grammar'
+    bound: typing.ForwardRef('_root.Grammar') | None
     name: str
     args: dict[str, typing.Any]
 
@@ -54,7 +54,7 @@ class GrammarNode(metaclass=ABCMeta):
     #    cls.SETUPS = tuple(
     #        (fn, (args := inspect.getargs(fn.__code__)).args, (args.varkw is not None))
     #        for fn in ((c.__dict__.get('setup', None)) for c in targets) if fn is not None)
-    def __init__(self, bind: '_root.Grammar', name: str, **kwargs: typing.Any):
+    def __init__(self, name: str, *, bind: typing.ForwardRef('_root.Grammar') | None = None, **kwargs: typing.Any):
         self.compile_order_hint = self.BASE_COMPILE_ORDER_HINT
         self.bound = bind
         self.name = name
@@ -65,7 +65,16 @@ class GrammarNode(metaclass=ABCMeta):
         self.pre_setup()
         #self.exec_setups(kwargs.copy())
         self.setup(**kwargs)
-        
+
+    def bind(self, to: '_root.Grammar', *, compile: bool = True) -> None:
+        '''Binds the node to `to`, compiling it if `compile`'''
+        self.bound = to
+        if compile: self.compile()
+    def unbind(self, *, compile: bool = True) -> None:
+        '''Unbinds the node, recompiling it if `compile`'''
+        self.bound = None
+        if compile: self.compile()
+
     #def exec_pre_setups(self) -> None:
     #    '''Execute all `.pre_setup()` functions'''
     #    for f in self.PRE_SETUPS: f(self)
@@ -95,6 +104,16 @@ class GrammarNode(metaclass=ABCMeta):
             All `.setup()` in the MRO (up to, not including, `GrammarNode`) are executed,
                 with passed kwargs automatically being used in the correct setup
         '''
+
+    def check_unbound(self) -> bool:
+        '''
+            Utility function for subclasses,
+                sets a failure and returns true if the node is unbound
+        '''
+        if self.bound is None:
+            self.failure = ReferenceError(f'Node {self!r} is unbound')
+            return True
+        return False
 
     def compile(self) -> None:
         '''Attempts to compile the node, setting failure to `.failure`'''
@@ -178,9 +197,7 @@ class SingleNestedNode(GrammarNode):
     def check_node(self: GrammarNode, name: str) -> GrammarNode | None:
         '''Utility method for checking a node, setting `.failure` appropriately'''
         node = self.bound.nodes.get(name, None)
-        if node is None:
-            self.failure = exceptions.NodeMissingError(name, f'Required node {name!r} is missing')
-            return None
+        if node.check_unbound(): return None
         if node.failure is not None:
             self.failure = exceptions.DependencyNodeNotReadyError(name, f'Required node {name!r} is not ready')
             self.failure.__context__ = node.failure
@@ -189,6 +206,7 @@ class SingleNestedNode(GrammarNode):
     def compile(self) -> None:
         '''Attempts to compile this node against the contained node'''
         self.failure = None
+        if self.check_unbound(): return
         self.node = self.check_node(self.node_name)
 class MultiNestedNode(GrammarNode):
     '''
@@ -224,4 +242,5 @@ class MultiNestedNode(GrammarNode):
     def compile(self) -> None:
         '''Attempts to compile this node against the contained nodes'''
         self.failure = None
+        if self.check_unbound(): return
         self.check_nodes(*self.nodes.keys())
