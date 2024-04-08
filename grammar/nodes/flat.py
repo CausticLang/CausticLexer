@@ -11,7 +11,7 @@ from . import exceptions
 
 from . import GrammarMark
 
-from ..patterns.buffermatcher import AbstractBufferMatcher
+from ..buffer_matcher import AbstractBufferMatcher
 #</Imports
 
 #> Header >/

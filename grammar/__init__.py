@@ -7,11 +7,12 @@ import operator
 from collections import abc as cabc
 #</Imports
 
-__all__ = ('nodes', 'patterns', 'Grammar')
+__all__ = ('nodes', 'loaders', 'buffer_matcher', 'Grammar')
 
 #> Package
 from . import nodes # re-exposed
-from . import patterns # re-exposed
+from . import loaders # re-exposed
+from . import buffer_matcher # re-exposed
 #</Package
 
 #> Header >/
@@ -20,11 +21,11 @@ class Grammar:
     __slots__ = ('nodes', 'patterns')
 
     nodes: dict[str, nodes.GrammarNode]
-    patterns: patterns.PatternLoader
+    patterns: loaders.pattern.PatternLoader
 
     def __init__(self, *, nodes: dict[str, nodes.GrammarNode | None] = None,
-                 patts: patterns.PatternLoader | type[patterns.PatternLoader] | None = None):
-        self.patterns = (patterns.PatternLoader() if patts is None
+                 patts: loaders.pattern.PatternLoader | type[loaders.pattern.PatternLoader] | None = None):
+        self.patterns = (loaders.pattern.PatternLoader() if patts is None
                          else patterns() if isinstance(patterns, type) else patterns)
         self.nodes = ({} if nodes is None else nodes)
 

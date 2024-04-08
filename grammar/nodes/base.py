@@ -15,7 +15,7 @@ from . import GrammarMark
 
 from .. import __init__ as _root
 
-from ..patterns.buffermatcher import AbstractBufferMatcher
+from ..buffer_matcher import AbstractBufferMatcher
 #</Imports
 
 #> Header >/
