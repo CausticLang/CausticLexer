@@ -82,6 +82,7 @@ class Grammar:
         if exists and (not replace):
             raise nodes.NodeExistsError(f'Node with name {node.name!r} is already registered')
         self.nodes[node.name] = node
+        if bind: node.bind(self)
         if compile: self.compile(needed=exists)
         return node
     def pop_node(self, node: nodes.GrammarNode | str, *, ignore_missing: bool = False, compile: bool = True) -> nodes.GrammarNode:
