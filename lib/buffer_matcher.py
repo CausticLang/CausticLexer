@@ -47,7 +47,14 @@ class AbstractBufferMatcher(ABC):
         '''
             Step through the buffer by `amount`
             If `amount` would bring the position below 0 or about the buffer's
-                maximum length, an `IndexError` is raised unless `allow_break`
+                maximum length, an `IndexError` is raised unless `allow_breakout`
+        '''
+    @abstractmethod
+    def peek(self, amount: int = 1, *, allow_breakout: bool = False) -> cabc.Buffer:
+        '''
+            Return the next `amount` tokens in the buffer
+            If `amount` would read below 0 or about the buffer's
+                maximum length, an `IndexError` is raised unless `allow_breakout`
         '''
 
     def save_loc(self) -> typing.Any:
@@ -56,8 +63,7 @@ class AbstractBufferMatcher(ABC):
     def load_loc(self, loc: int) -> None:
         '''Loads a location exported by `.save_loc()`'''
         self.pos = loc
-        
-    
+
 class BufferMatcher_DynamicLCNo(AbstractBufferMatcher):
     '''
         A `BufferMatcher` implementation
@@ -95,6 +101,11 @@ class BufferMatcher_DynamicLCNo(AbstractBufferMatcher):
         buff = self.buffer[slice(newp, self.pos) if amount < 0 else slice(self.pos, newp)]
         self.pos = (len(self.data) + newp) if newp < 0 else newp
         return buff
+    def peek(self, amount: int = 1, *, allow_breakout: bool = False) -> cabc.Buffer:
+        newp = self.pos + amount
+        if (not allow_breakout) and (newp < 0) or (newp > len(self.data)):
+            raise IndexError('Cannot peek by an amount that would over/underflow')
+        return self.buffer[slice(newp, self.pos) if amount < 0 else slice(self.pos, newp)]
 
 class BufferMatcher_StaticLCNo(BufferMatcher_DynamicLCNo):
     '''
