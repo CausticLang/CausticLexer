@@ -146,12 +146,12 @@ class NodeWithReturnMode(GrammarNode):
     @abstractproperty
     @classmethod
     def ReturnMode(cls) -> type[Enum]: pass
-    return_mode: Enum | None
+    return_mode: Enum
 
     def setup(self, *, return_mode: Enum | None = None, **kwargs) -> None:
         super().setup(**kwargs)
         self.check(return_mode)
-        self.return_mode = return_mode
+        self.return_mode = next(iter(self.ReturnMode)) if return_mode is None else return_mode
 
     def check(self, return_mode: Enum | None = None, **kwargs) -> None:
         super().check(**kwargs)
