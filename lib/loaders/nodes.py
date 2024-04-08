@@ -24,7 +24,6 @@ for grpn in ('flat', 'nested', 'meta'):
     NODE_KEYS.update((f'{grpn}.{noden.lower().removesuffix("node")}', getattr(grp, noden))
                      for noden in grp.__all__)
 
-
 def load_dict(src: cabc.Mapping[str, typing.Any], *, node_keys: cabc.Mapping[str, nodes.GrammarNode] = NODE_KEYS) -> cabc.Generator[tuple[str, nodes.GrammarNode], None, None]:
     '''Creates nodes from a structured dictionary'''
     src = copy.deepcopy(src)
@@ -45,7 +44,3 @@ def load(*files: str | os.PathLike | typing.BinaryIO, **kwargs) -> dict[str, nod
         with (nullcontext(f) if isinstance(f, io.BufferedReader) else open(f, 'rb')) as f:
             nodes.update(tomllib.load(f))
     return load_dict(nodes)
-
-class NodeLoader:
-    '''Constructs nodes from a structured file'''
-    __slots__ =  ()
