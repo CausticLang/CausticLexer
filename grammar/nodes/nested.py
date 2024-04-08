@@ -75,12 +75,12 @@ class ListNode(base.NodeWithReturnMode, base.MultiNestedNode):
 
     def match(self, on: AbstractBufferMatcher, *, return_mode: ReturnMode) \
     -> GrammarMark | tuple[typing.Any, ...] | dict[str, typing.Any] | (tuple[typing.Any, ...] | dict[str, typing.Any] | None | typing.Any):
-        orig_pos = on.save_loc()
+        save = on.save_loc()
         matches = []
         for name in self.order:
             matches.append(self.nodes[name](on))
             if matches[-1] is GrammarMark.NO_MATCH:
-                on.load_loc(orig_pas) # backtrack
+                on.load_loc(save) # backtrack
                 return GrammarMark.NO_MATCH # -> GrammarMark
         match return_mode:
             case self.ReturnMode.SEQ: return tuple(matches) # -> tuple[typing.Any, ...]
