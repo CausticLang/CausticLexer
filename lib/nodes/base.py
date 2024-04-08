@@ -145,7 +145,9 @@ class GrammarNode(metaclass=ABCMeta):
         args = self.args.copy()
         if self.return_mode is not None:
             args['return_mode'] = self.return_mode.name
-        return (type(self), (self.name, args))
+        return (type(self), (self.name, args), {'bound': self.bound, 'failure': self.failure})
+    def __setstate__(self, state: dict):
+        for a,v in state.items(): setattr(self, a, v)
 
 # Mixins
 class NodeWithReturnMode(GrammarNode):
