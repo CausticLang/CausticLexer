@@ -53,7 +53,7 @@ class PatternNode(base.NodeWithReturnMode, base.NeverNestedNode):
     def match(self, on: AbstractBufferMatcher, *, return_mode: ReturnMode) \
     -> GrammarMark | re.Match | dict[str, bytes] | tuple[bytes, ...] | bytes:
         m = on(self.patt.match)
-        if m is None: return self.GrammarMark.NO_MATCH # -> GrammarMark
+        if m is None: return GrammarMark.NO_MATCH # -> GrammarMark
         match return_mode:
             case self.ReturnMode.MATCH: return m # -> re.Match
             case self.ReturnMode.DICT: return m.groupdict() # -> dict[str, bytes]
