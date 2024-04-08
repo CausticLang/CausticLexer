@@ -85,12 +85,15 @@ class Grammar:
         if bind: node.bind(self)
         if compile: self.compile(needed=exists)
         return node
-    def pop_node(self, node: nodes.GrammarNode | str, *, ignore_missing: bool = False, compile: bool = True) -> nodes.GrammarNode:
+    def pop_node(self, node: nodes.GrammarNode | str, *,
+                 ignore_missing: bool = False, compile: bool = True, unbind: bool = True) -> nodes.GrammarNode:
         '''
             Removes and returns a node
                 Note that the node will still be bound to this `Grammar`
 
             Raises `NodeMissingError` if the node is missing unless `ignore_missing`
+
+            Unbinds the node from this `Grammar` with `node.unbind()` if `unbind`
 
             If `compile`, then `.compile()` will be run after removing the node
                 Note that `.compile()` will not be run if the node is missing
@@ -100,5 +103,6 @@ class Grammar:
             if ignore_missing: return
             raise nodes.NodeMissingError(f'Node {node!r} (name {name!r}) is missing')
         node = self.pop(name)
+        if unbind: node.unbind()
         if compile: self.compile()
         return node
