@@ -3,7 +3,9 @@
 '''Nodes that do not really match anything, or behave unlike most nodes'''
 
 #> Imports
+import re
 import typing
+from collections import deque
 
 from . import base
 
@@ -13,7 +15,7 @@ from ..buffer_matcher import AbstractBufferMatcher
 #</Imports
 
 #> Header >/
-__all__ = ('TrueNode', 'FalseNode', 'NotNode')
+__all__ = ('TrueNode', 'FalseNode', 'NotNode', 'IndentationNode')
 
 class TrueNode(base.NeverNestedNode):
     '''Always matches, returning `val` without consuming anything'''
@@ -66,3 +68,34 @@ class NotNode(base.SingleNestedNode):
             return self.val # -> typing.Any
         on.load_loc(save) # backtrack
         return GrammarMark.NO_MATCH # -> GrammarMark
+
+class IndentationNode(base.NeverNestedNode):
+    '''
+        A special node to handle indentation
+        Note: holds state
+    '''
+    __slots__ = ('indents',)
+
+    INDENT_PATT = re.compile(rb'\n([ \t]*)', re.MULTILINE)
+    SPACES = b' \t'
+
+    indents: deque[int]
+
+    def setup(self, **kwargs) -> None:
+        super().setup(**kwargs)
+        self.indents = deque((0,))
+    def match(self, on: AbstractBufferMatcher) -> GrammarMark | tuple[GrammarMark, int]:
+        mat = on(self.INDENT_PATT.match)
+        count = 0 if mat is None else sum(mat.group(1).count(s) for s in self.SPACES)
+        if count > self.indents[-1]:
+            self.indents.append(count)
+            return GrammarMark.INDENT
+        if count == self.indents[-1]:
+            return GrammarMark.NO_CHANGE
+        dedents = 0
+        while self.indents and (count < self.indents[-1]):
+            self.indents.pop()
+            dedents += 1
+        if count != self.indents[-1]:
+            raise IndentationError(f'Indentation failure: expected {self.indents[-1]} spaces, got {count}')
+        return (GrammarMark.DEDENT, dedents)
