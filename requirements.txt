@@ -1,1 +1,2 @@
 regex-compose >= 0.0.3
+click
