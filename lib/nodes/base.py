@@ -54,9 +54,13 @@ class GrammarNode(metaclass=ABCMeta):
     #    cls.SETUPS = tuple(
     #        (fn, (args := inspect.getargs(fn.__code__)).args, (args.varkw is not None))
     #        for fn in ((c.__dict__.get('setup', None)) for c in targets) if fn is not None)
-    def __init__(self, name: str, *, bind: typing.ForwardRef('_root.Grammar') | None = None, **kwargs: typing.Any):
+    def __init__(self, name: str, _pickle_from: dict | None = None, /, *, bind: typing.ForwardRef('_root.Grammar') | None = None, **kwargs: typing.Any):
         self.compile_order_hint = self.BASE_COMPILE_ORDER_HINT
-        self.bound = bind
+        if _pickle_from is None:
+            self.bound = bind
+        else:
+            self.bound = None
+            kwargs = _pickle_from
         self.name = name
         self.args = kwargs
         self.failure = None
@@ -137,6 +141,11 @@ class GrammarNode(metaclass=ABCMeta):
     def __repr__(self) -> str:
         return (f'<{type(self).__name__} {self.name!r}'
                 f'({", ".join(f"{k}={v!r}" for k,v in self.args.items())})>')
+    def __reduce__(self) -> tuple[type[typing.Self], tuple[str, dict[str, typing.Any]]]:
+        args = self.args.copy()
+        if self.return_mode is not None:
+            args['return_mode'] = self.return_mode.name
+        return (type(self), (self.name, args))
 
 # Mixins
 class NodeWithReturnMode(GrammarNode):
@@ -148,8 +157,10 @@ class NodeWithReturnMode(GrammarNode):
     def ReturnMode(cls) -> type[Enum]: pass
     return_mode: Enum
 
-    def setup(self, *, return_mode: Enum | None = None, **kwargs) -> None:
+    def setup(self, *, return_mode: Enum | str | None = None, **kwargs) -> None:
         super().setup(**kwargs)
+        if isinstance(return_mode, str):
+            return_mode = self.ReturnMode[return_mode]
         self.check(return_mode)
         self.return_mode = next(iter(self.ReturnMode)) if return_mode is None else return_mode
 
