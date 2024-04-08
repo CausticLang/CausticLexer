@@ -160,8 +160,8 @@ class NodeWithReturnMode(GrammarNode):
         raise TypeError(f'return_mode should be a {self.ReturnMode}, got {return_mode!r}')
 
     def __call__(self, on: AbstractBufferMatcher, *, return_mode: Enum | None = None, **kwargs) -> GrammarMark | typing.Any:
-        super().__call__(on, return_mode=(self.return_mode if return_mode is None
-                                          else return_mode), **kwargs)
+        return super().__call__(on, return_mode=(self.return_mode if return_mode is None
+                                                 else return_mode), **kwargs)
 
 # Nesting
 class NeverNestedNode(GrammarNode):
