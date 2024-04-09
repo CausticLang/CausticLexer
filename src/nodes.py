@@ -104,7 +104,7 @@ class NodeGroup(Node):
         if not results: return None
         return results
     def __str__(self) -> str:
-        return f'{"({"[self.ignore_whitespace]} {" ".join(map(str, self.nodes))}{")}"[self.ignore_whitespace]}{"!" if self.is_stealer else ""}'
+        return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.ignore_whitespace]} {" ".join(map(str, self.nodes))}{")}"[self.ignore_whitespace]}{"!" if self.is_stealer else ""}'
 
 class NodeUnion(Node):
     '''Matches any of its nodes'''
@@ -122,7 +122,7 @@ class NodeUnion(Node):
         if not self.is_stealer: return self.NO_RETURN
         raise NodeSyntaxError('No nodes matched')
     def __str__(self) -> str:
-        return f'[ {" ".join(map(str, self.nodes))} ]{"!" if self.is_stealer else ""}'
+        return f'{"" if self.name is None else f"{self.name}:"}[ {" ".join(map(str, self.nodes))} ]{"!" if self.is_stealer else ""}'
 
 class StringNode(Node):
     '''Matches a specific string'''
@@ -139,7 +139,7 @@ class StringNode(Node):
         if not self.is_stealer: return self.NO_RETURN
         raise NodeSyntaxError(self, bm, 'Expected string')
     def __str__(self) -> str:
-        return f'"{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"{"!" if self.is_stealer else ""}'
+        return f'"{"" if self.name is None else f"{self.name}:"}{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"{"!" if self.is_stealer else ""}'
 class PatternNode(Node):
     '''Matches a pattern (regular expression)'''
     __slots__ = ('pattern', 'group')
@@ -157,6 +157,7 @@ class PatternNode(Node):
         raise NodeSyntaxError(self, bm, 'Expected pattern')
     FLAGS = {'i': re.IGNORECASE, 'm': re.MULTILINE, 's': re.DOTALL}
     def __str__(self) -> str:
-        return (f'{"" if self.group is None else self.group}/'
+        return (f'{"" if self.name is None else f"{self.name}:"}'
+                f'{"" if self.group is None else self.group}/'
                 f'{self.pattern.pattern.decode(errors="backslashreplace").replace("/", "\\/")}/'
                 f'{"".join(f for f,v in self.FLAGS.items() if v & self.pattern.flags)}')
