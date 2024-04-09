@@ -2,6 +2,7 @@
 
 #> Imports
 import re
+import struct
 import buffer_matcher
 from types import SimpleNamespace
 from collections import abc as cabc
@@ -19,6 +20,7 @@ PATTERNS = SimpleNamespace(
     statement = re.compile(rb'^([\w]+)\s*=\s*', re.MULTILINE),
     named = re.compile(rb'([\w]*):'),
     string = re.compile(rb'"((?:[^\\"]|(?:\\.))*)"'),
+    regex = re.compile(rb'(?P<g>\d)?/(?P<p>(?:[^\\/]|(?:\\.))+)/(?P<f>[ims]*)'),
 )
 PATTERNS.discard = re.compile(b'((' + PATTERNS.whitespace.pattern + b')|(' + PATTERNS.comment.pattern + b'))+', re.MULTILINE)
 
@@ -39,6 +41,12 @@ def compile(bm: buffer_matcher.AbstractBufferMatcher) -> cabc.Generator[tuple[st
         else:
             raise ValueError(f'Expected statement at {bm.pos} ({bm.lno+1}:{bm.cno})')
 
+RE_FLAGS = {
+    b'i': re.IGNORECASE,
+    b'm': re.MULTILINE,
+    b's': re.DOTALL,
+}
+
 def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes = CHARS.statement_stop) -> cabc.Generator[nodes.Node, None, None]:
     while True:
         bm(PATTERNS.discard.match)
@@ -56,6 +64,14 @@ def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes
         # nodes
         if (m := bm(PATTERNS.string.match)) is not None:
             node = nodes.StringNode(m.group(1))
+        elif (m := bm(PATTERNS.regex.match)) is not None:
+            flags = re.NOFLAG
+            for f in struct.unpack(f'{len(m.group("f"))}c', m.group('f')):
+                flag = RE_FLAGS.get(f, None)
+                if flag is None:
+                    raise ValueError(f'Unknown regular expression flag {f!r} at {bm.pos} ({bm.lno+1}:{bm.cno})')
+                flags |= flag
+            node = nodes.PatternNode(re.compile(m.group('p'), flags), None if m.group('g') is None else int(m.group('g')))
         else:
             match bm.step():
                 case CHARS.group_start:
