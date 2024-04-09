@@ -114,7 +114,6 @@ class NodeUnion(Node):
     def __init__(self, *nodes: Node, **kwargs):
         super().__init__(**kwargs)
         self.nodes = nodes
-        self.ignore_whitespace = ignore_whitespace
     def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | dict[str, typing.Any]:
         for n in self.nodes:
             if (res := n(bm)) is not self.NO_RETURN:
