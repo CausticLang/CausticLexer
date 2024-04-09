@@ -90,6 +90,7 @@ def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes
         bm(PATTERNS.discard.match)
         if bm.peek() == CHARS.stealer:
             node.is_stealer = True
+            bm.step()
         # yield node
         node.name = name
         yield node
