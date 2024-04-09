@@ -2,6 +2,7 @@
 
 #> Imports
 import io
+import re
 import typing
 from abc import ABCMeta, abstractmethod
 
@@ -10,7 +11,7 @@ import buffer_matcher
 
 __all__ = ('NodeSyntaxError',
            'Node', 'NodeGroup', 'NodeUnion',
-           'StringNode')
+           'StringNode', 'PatternNode')
 
 #> Header >/
 # Exceptions
@@ -139,3 +140,13 @@ class StringNode(Node):
         raise NodeSyntaxError(self, bm, 'Expected string')
     def __str__(self) -> str:
         return f'"{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"{"!" if self.is_stealer else ""}'
+class PatternNode(Node):
+    '''Matches a pattern (regular expression)'''
+    __slots__ = ('pattern',)
+
+    pattern: re.Pattern
+
+    def __init__(self, pattern: re.Pattern, **kwargs):
+        self.pattern = pattern
+    def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | re.Match:
+        ...
