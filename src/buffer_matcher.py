@@ -43,7 +43,7 @@ class AbstractBufferMatcher(ABC):
             The most commonly passed function is `<re.Pattern>.match`
         '''
     @abstractmethod
-    def step(self, amount: int = -1, *, allow_breakout: bool = False) -> cabc.Buffer:
+    def step(self, amount: int = 1, *, allow_breakout: bool = False) -> cabc.Buffer:
         '''
             Step through the buffer by `amount`
             If `amount` would bring the position below 0 or about the buffer's
