@@ -54,13 +54,13 @@ def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes
         if (m := bm(PATTERNS.named.match)) is not None:
             name = m.group(1).decode()
             bm(PATTERNS.discard.match)
+        else: name = None
         # check for EOF
         c = bm.peek()
         if not c:
             if name is None:
                 raise EOFError(f'Reached end of file before stop-mark {_stop!r}')
             raise EOFError('Reach end of file, but expected node after name-pattern')
-        else: name = None
         # nodes
         if (m := bm(PATTERNS.string.match)) is not None:
             node = nodes.StringNode(m.group(1))
