@@ -51,6 +51,7 @@ class Node(metaclass=ABCMeta):
         '''Executes this node on `data`'''
     @abstractmethod
     def __str__(self) -> str: pass
+    def __repr__(self) -> str: return str(self)
 
 class NodeGroup(Node):
     '''A group of nodes'''
