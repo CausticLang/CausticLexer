@@ -141,11 +141,21 @@ class StringNode(Node):
         return f'"{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"{"!" if self.is_stealer else ""}'
 class PatternNode(Node):
     '''Matches a pattern (regular expression)'''
-    __slots__ = ('pattern',)
+    __slots__ = ('pattern', 'group')
 
+    group: int | None
     pattern: re.Pattern
 
-    def __init__(self, pattern: re.Pattern, **kwargs):
+    def __init__(self, pattern: re.Pattern, group: int | None = None, **kwargs):
         self.pattern = pattern
-    def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | re.Match:
-        ...
+        self.group = group
+    def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | re.Match | bytes:
+        if (m := bm(self.pattern.match)) is not None:
+            return m.group(self.group) if self.group else m
+        if not self.is_stealer: return self.NO_RETURN
+        raise NodeSyntaxError(self, bm, 'Expected pattern')
+    FLAGS = {'i': re.IGNORECASE, 'm': re.MULTILINE, 's': re.DOTALL}
+    def __str__(self) -> str:
+        return (f'{"" if self.group is None else self.group}/'
+                f'{self.pattern.pattern.decode(errors="backslashreplace").replace("/", "\\/")}/'
+                f'{"".join(f for f,v in self.FLAGS.items() if v & self.pattern.flags)}')
