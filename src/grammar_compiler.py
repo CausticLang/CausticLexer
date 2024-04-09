@@ -61,7 +61,7 @@ def compile_inner(data: buffer_matcher.AbstractBufferMatcher, *, terminal: bool,
             return
         if n is Markers.UNION:
             yield n
-            try: yield tuple[t, next(ciiter)]
+            try: yield (t, next(ciiter))
             except StopIteration as sie:
                 sie.add_node('Whilst attempting to resolve union')
                 raise sie
