@@ -16,7 +16,7 @@ __all__ = ('GrammarTypes', 'Markers', 'RE_FLAGS', 'PATTERNS',
 
 type GrammarTypes = re.Pattern | str | Markers
 
-Markers = Enum('Markers', ('UNION', 'STEALER', 'TARGET', 'PARENS',
+Markers = Enum('Markers', ('UNION', 'STEALER', 'TARGET',
                            'TERMINAL', 'NONTERMINAL'))
 
 RE_FLAGS = {
@@ -53,6 +53,27 @@ def compile(data: buffer_matcher.AbstractBufferMatcher) -> cabc.Generator[tuple[
 
 def compile_inner(data: buffer_matcher.AbstractBufferMatcher, *, terminal: bool, finalizer: bytes) -> cabc.Generator[GrammarTypes | tuple, None, None]:
     '''Helper function to compile the inside of a terminal or nonterminal'''
+    ciiter = compile_inner_raw(data, terminal=terminal, finalizer=finalizer)
+    for t in ciiter:
+        try: n = next(ciiter)
+        except StopIteration:
+            yield t
+            return
+        if n is Markers.UNION:
+            yield n
+            try: yield tuple[t, next(ciiter)]
+            except StopIteration as sie:
+                sie.add_node('Whilst attempting to resolve union')
+                raise sie
+        else:
+            yield t
+            yield n
+
+def compile_inner_raw(data: buffer_matcher.AbstractBufferMatcher, *, terminal: bool, finalizer: bytes) -> cabc.Generator[GrammarTypes | tuple, None, None]:
+    '''
+        Helper function to compile the inside of a terminal or nonterminal
+        
+    '''
     consume_whitespace(data)
     while (c := data.peek()):
         consume_whitespace(data)
@@ -82,7 +103,6 @@ def compile_inner(data: buffer_matcher.AbstractBufferMatcher, *, terminal: bool,
             yield Markers.TARGET
             yield tuple(compile_inner(data, terminal=terminal, finalizer=b'>'))
         elif c == b'(':
-            yield Markers.PARENS
             yield tuple(compile_inner(data, terminal=terminal, finalizer=b')'))
         elif c == b'|':
             yield Markers.UNION
