@@ -29,7 +29,7 @@ PATTERNS = {
     'terminal': re.compile(br'([A-Z]+)'),
     'nonterminal': re.compile(br'([a-z]+)'),
     'regex': re.compile(br'/(?P<p>(?:[^/\\]|(?:\\.))*)/(?P<f>[ims]*)', re.DOTALL),
-    'string': re.compile(br'''((?:"(?:[^\\"]|(?:\\.))*")|(?:'(?:[^\\']|(?:\\.))*'))''', re.DOTALL),
+    'string': re.compile(br'''(?:"((?:[^\\"]|(?:\\.))*)")|(?:'((?:[^\\']|(?:\\.))*)')''', re.DOTALL),
 }
 
 def consume_whitespace(data: buffer_matcher.AbstractBufferMatcher):
@@ -88,7 +88,7 @@ def compile_inner_raw(data: buffer_matcher.AbstractBufferMatcher, *, terminal: b
             yield re.compile(m.group('p'), flags)
             continue
         if m := data(PATTERNS['string'].match):
-            yield m.group(1)
+            yield m.group(1) or m.group(2)
             continue
         if not terminal:
             if (((mt := data(PATTERNS['terminal'].match)) is not None)
