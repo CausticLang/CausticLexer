@@ -148,6 +148,7 @@ class PatternNode(Node):
     pattern: re.Pattern
 
     def __init__(self, pattern: re.Pattern, group: int | None = None, **kwargs):
+        super().__init__(**kwargs)
         self.pattern = pattern
         self.group = group
     def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | re.Match | bytes:
