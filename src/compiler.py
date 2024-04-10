@@ -4,8 +4,8 @@
 import re
 import codecs
 import struct
-import buffer_matcher
 from types import SimpleNamespace
+from buffer_matcher import SimpleBufferMatcher
 from collections import abc as cabc
 
 import nodes
@@ -33,11 +33,11 @@ CHARS = SimpleNamespace(
     stealer = b'!',
 )
 
-def compile(bm: buffer_matcher.AbstractBufferMatcher) -> cabc.Generator[tuple[str, nodes.Node], None, None]:
+def compile(bm: SimpleBufferMatcher) -> cabc.Generator[tuple[str, nodes.Node], None, None]:
     while True:
-        bm(PATTERNS.discard.match)
-        if not bm.peek(): return # EOF
-        if (m := bm(PATTERNS.statement.match)) is not None:
+        bm.match(PATTERNS.discard)
+        if not bm.peek(1): return # EOF
+        if (m := bm.match(PATTERNS.statement)) is not None:
             yield (m.group(1), nodes.NodeGroup(*tuple(compile_expression(bm))))
         else:
             raise ValueError(f'Expected statement at {bm.pos} ({bm.lno+1}:{bm.cno})')
@@ -48,25 +48,25 @@ RE_FLAGS = {
     b's': re.DOTALL,
 }
 
-def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes = CHARS.statement_stop,
+def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statement_stop,
                        _in_group: bool = False) -> cabc.Generator[nodes.Node, None, None]:
     while True:
-        bm(PATTERNS.discard.match)
+        bm.match(PATTERNS.discard)
         # pre-nodes
-        if (m := bm(PATTERNS.named.match)) is not None:
+        if (m := bm.match(PATTERNS.named)) is not None:
             name = m.group(1).decode()
-            bm(PATTERNS.discard.match)
+            bm.match(PATTERNS.discard)
         else: name = None
         # check for EOF
-        c = bm.peek()
+        c = bm.peek(1)
         if not c:
             if name is None:
                 raise EOFError(f'Reached end of file before stop-mark {_stop!r}')
             raise EOFError('Reach end of file, but expected node after name-pattern')
         # nodes
-        if (m := bm(PATTERNS.string.match)) is not None:
+        if (m := bm.match(PATTERNS.string)) is not None:
             node = nodes.StringNode(codecs.escape_decode(m.group(1)))
-        elif (m := bm(PATTERNS.regex.match)) is not None:
+        elif (m := bm.match(PATTERNS.regex)) is not None:
             flags = re.NOFLAG
             for f in struct.unpack(f'{len(m.group("f"))}c', m.group('f')):
                 flag = RE_FLAGS.get(f, None)
@@ -95,6 +95,6 @@ def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes
                         raise SyntaxError(f'Reached stop-mark {_stop!r}, but expected node after name-pattern')
                     return
         # finish and yield
-        bm(PATTERNS.discard.match)
+        bm.match(PATTERNS.discard)
         node.name = name
         yield node

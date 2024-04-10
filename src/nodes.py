@@ -5,8 +5,7 @@ import io
 import re
 import typing
 from abc import ABCMeta, abstractmethod
-
-import buffer_matcher
+from buffer_matcher import SimpleBufferMatcher
 #</Imports
 
 __all__ = ('NodeSyntaxError',
@@ -19,9 +18,9 @@ class NodeSyntaxError(SyntaxError):
     __slots__ = ('node',)
 
     node: 'Node'
-    bm: buffer_matcher.AbstractBufferMatcher
+    bm: SimpleBufferMatcher
 
-    def __init__(self, node: 'Node', bm: buffer_matcher.AbstractBufferMatcher, message: str):
+    def __init__(self, node: 'Node', bm: SimpleBufferMatcher, message: str):
         super().__init__(message)
         self.node = node; self.bm = bm
     def __str__(self) -> str:
@@ -45,7 +44,7 @@ class Node(metaclass=ABCMeta):
         self.name = name
 
     @abstractmethod
-    def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | dict[str, typing.Any]:
+    def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any]:
         '''Executes this node on `data`'''
     @abstractmethod
     def __str__(self) -> str: pass
@@ -70,8 +69,8 @@ class NodeGroup(Node):
         super().__init__(**kwargs)
         self.nodes = nodes
         self.ignore_whitespace = ignore_whitespace
-    def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | dict[str, typing.Any] | list[typing.Any] | None:
-        save = bm.save_loc()
+    def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any] | list[typing.Any] | None:
+        save = bm.save_pos()
         results = []
         single_result = False
         stealer = False; after = None
@@ -94,7 +93,7 @@ class NodeGroup(Node):
                 raise NodeSyntaxError(self, bm, f'Node failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}')
             if res is self.NO_RETURN:
                 if not stealer:
-                    bm.load_loc(save)
+                    bm.load_pos(save)
                     return self.NO_RETURN
                 nse = NodeSyntaxError(self, bm, f'Node failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}')
                 nse.add_note(f'Note: stealer defined after node {after}')
@@ -135,7 +134,7 @@ class NodeUnion(Node):
     def __init__(self, *nodes: Node, **kwargs):
         super().__init__(**kwargs)
         self.nodes = nodes
-    def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | dict[str, typing.Any]:
+    def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any]:
         for n in self.nodes:
             if (res := n(bm)) is not self.NO_RETURN:
                 return res
@@ -152,9 +151,9 @@ class StringNode(Node):
     def __init__(self, string: bytes, **kwargs):
         super().__init__(**kwargs)
         self.string = string
-    def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | bytes:
-        if bm.peek(len(self.string)) == self.string:
-            return bytes(bm.step(len(self.string)))
+    def __call__(self, bm: SimpleBufferMatcher) -> object | bytes:
+        if bm.match(self.string):
+            return self.string
         return self.NO_RETURN
     def __str__(self) -> str:
         return f'"{"" if self.name is None else f"{self.name}:"}{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"'
@@ -169,8 +168,8 @@ class PatternNode(Node):
         super().__init__(**kwargs)
         self.pattern = pattern
         self.group = group
-    def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | re.Match | bytes:
-        if (m := bm(self.pattern.match)) is not None:
+    def __call__(self, bm: SimpleBufferMatcher) -> object | re.Match | bytes:
+        if (m := bm.match(self.pattern)) is not None:
             return m.group(self.group) if self.group else m
         return self.NO_RETURN
     FLAGS = {'i': re.IGNORECASE, 'm': re.MULTILINE, 's': re.DOTALL}
