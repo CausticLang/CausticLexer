@@ -47,7 +47,8 @@ RE_FLAGS = {
     b's': re.DOTALL,
 }
 
-def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes = CHARS.statement_stop) -> cabc.Generator[nodes.Node, None, None]:
+def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes = CHARS.statement_stop,
+                       _in_group: bool = False) -> cabc.Generator[nodes.Node, None, None]:
     while True:
         bm(PATTERNS.discard.match)
         # pre-nodes
@@ -74,23 +75,25 @@ def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes
             node = nodes.PatternNode(re.compile(m.group('p'), flags), None if m.group('g') is None else int(m.group('g')))
         else:
             match bm.step():
+                case CHARS.stealer:
+                    if not _in_group:
+                        raise SyntaxError(f'Cannot add stealer node outside of group (@{bm.pos} ({bm.lno+1}:{bm.cno}))')
+                    if name is not None:
+                        raise SyntaxError(f'Cannot add name to stealer node at {bm.pos} ({bm.lno+1}:{bm.cno})')
+                    node = nodes.Stealer()
                 case CHARS.group_start:
-                    node = nodes.NodeGroup(*tuple(compile_expression(bm, _stop=CHARS.group_stop)))
+                    node = nodes.NodeGroup(*tuple(compile_expression(bm, _stop=CHARS.group_stop, _in_group=True)))
                 case CHARS.group_nospace_start:
-                    node = nodes.NodeGroup(*tuple(compile_expression(bm, _stop=CHARS.group_nospace_stop)))
+                    node = nodes.NodeGroup(*tuple(compile_expression(bm, _stop=CHARS.group_nospace_stop, _in_group=True)))
                 case CHARS.union_start:
-                    node = nodes.NodeUnion(*tuple(compile_expression(bm, _stop=CHARS.union_stop)))
+                    node = nodes.NodeUnion(*tuple(compile_expression(bm, _stop=CHARS.union_stop, _in_group=False)))
                 case _ as c:
                     if c != _stop:
                         raise SyntaxError(f'Expected node--unknown character {bytes(c)!r} at {bm.pos} ({bm.lno+1}:{bm.cno})')
                     if name is not None:
                         raise SyntaxError(f'Reached stop-mark {_stop!r}, but expected node after name-pattern')
                     return
-        # post-nodes
+        # finish and yield
         bm(PATTERNS.discard.match)
-        if bm.peek() == CHARS.stealer:
-            node.is_stealer = True
-            bm.step()
-        # yield node
         node.name = name
         yield node

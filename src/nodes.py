@@ -10,7 +10,7 @@ import buffer_matcher
 #</Imports
 
 __all__ = ('NodeSyntaxError',
-           'Node', 'NodeGroup', 'NodeUnion',
+           'Node', 'Stealer', 'NodeGroup', 'NodeUnion',
            'StringNode', 'PatternNode')
 
 #> Header >/
@@ -35,16 +35,14 @@ class NodeSyntaxError(SyntaxError):
 # Nodes
 class Node(metaclass=ABCMeta):
     '''The base class for all nodes'''
-    __slots__ = ('name', 'is_stealer')
+    __slots__ = ('name',)
 
     NO_RETURN = object()
 
     name: str | None
-    is_stealer: bool
 
-    def __init__(self, *, name: str | None = None, is_stealer: bool = False):
+    def __init__(self, *, name: str | None = None):
         self.name = name
-        self.is_stealer = is_stealer
 
     @abstractmethod
     def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | dict[str, typing.Any]:
@@ -52,6 +50,14 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def __str__(self) -> str: pass
     def __repr__(self) -> str: return str(self)
+
+class Stealer(Node):
+    '''Marks a special "stealer" node'''
+    __slots__ = ()
+
+    def __call__(self, *args, **kwargs):
+        raise TypeError(f'Stealer nodes should not be called')
+    def __str__(self) -> str: return '!'
 
 class NodeGroup(Node):
     '''A group of nodes'''
@@ -68,17 +74,31 @@ class NodeGroup(Node):
         save = bm.save_loc()
         results = []
         single_result = False
+        stealer = False; after = None
         for i,n in enumerate(self.nodes):
+            if isinstance(n, Stealer):
+                if stealer:
+                    se = SyntaxError('Cannot have multiple stealers in the same group')
+                    se.add_note(str(self))
+                    raise se
+                if not i:
+                    se = SyntaxError('Cannot have steal at the beginning of a group')
+                    se.add_note(str(self))
+                    raise se
+                stealer = True
+                after = self.nodes[-1]
+                continue
             # Execute node
             try: res = n(bm)
             except NodeSyntaxError:
                 raise NodeSyntaxError(self, bm, f'Node failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}')
             if res is self.NO_RETURN:
-                if not self.is_stealer:
+                if not stealer:
                     bm.load_loc(save)
                     return self.NO_RETURN
-                raise NodeSyntaxError(self, bm, f'Node failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}') \
-                      from NodeSyntaxError(n, bm, 'Non-stealer node failed, but caused node-group to fail')
+                nse = NodeSyntaxError(self, bm, f'Node failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}')
+                nse.add_note(f'Note: stealer defined after node {after}')
+                raise nse from NodeSyntaxError(n, bm, 'Node failed to match')
             # Check how we should return results
             if n.name is None: # not assigned a name ("[name]:<node>")
                 if isinstance(results, dict): continue # don't add it
@@ -104,7 +124,7 @@ class NodeGroup(Node):
         if not results: return None
         return results
     def __str__(self) -> str:
-        return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.ignore_whitespace]} {" ".join(map(str, self.nodes))}{")}"[self.ignore_whitespace]}{"!" if self.is_stealer else ""}'
+        return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.ignore_whitespace]} {" ".join(map(str, self.nodes))}{")}"[self.ignore_whitespace]}'
 
 class NodeUnion(Node):
     '''Matches any of its nodes'''
@@ -119,10 +139,9 @@ class NodeUnion(Node):
         for n in self.nodes:
             if (res := n(bm)) is not self.NO_RETURN:
                 return res
-        if not self.is_stealer: return self.NO_RETURN
-        raise NodeSyntaxError('No nodes matched')
+        return self.NO_RETURN
     def __str__(self) -> str:
-        return f'{"" if self.name is None else f"{self.name}:"}[ {" ".join(map(str, self.nodes))} ]{"!" if self.is_stealer else ""}'
+        return f'{"" if self.name is None else f"{self.name}:"}[ {" ".join(map(str, self.nodes))} ]'
 
 class StringNode(Node):
     '''Matches a specific string'''
@@ -136,10 +155,9 @@ class StringNode(Node):
     def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | bytes:
         if bm.peek(len(self.string)) == self.string:
             return bytes(bm.step(len(self.string)))
-        if not self.is_stealer: return self.NO_RETURN
-        raise NodeSyntaxError(self, bm, 'Expected string')
+        return self.NO_RETURN
     def __str__(self) -> str:
-        return f'"{"" if self.name is None else f"{self.name}:"}{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"{"!" if self.is_stealer else ""}'
+        return f'"{"" if self.name is None else f"{self.name}:"}{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"'
 class PatternNode(Node):
     '''Matches a pattern (regular expression)'''
     __slots__ = ('pattern', 'group')
@@ -154,8 +172,7 @@ class PatternNode(Node):
     def __call__(self, bm: buffer_matcher.AbstractBufferMatcher) -> object | re.Match | bytes:
         if (m := bm(self.pattern.match)) is not None:
             return m.group(self.group) if self.group else m
-        if not self.is_stealer: return self.NO_RETURN
-        raise NodeSyntaxError(self, bm, 'Expected pattern')
+        return self.NO_RETURN
     FLAGS = {'i': re.IGNORECASE, 'm': re.MULTILINE, 's': re.DOTALL}
     def __str__(self) -> str:
         return (f'{"" if self.name is None else f"{self.name}:"}'
