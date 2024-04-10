@@ -25,11 +25,13 @@ class NodeSyntaxError(SyntaxError):
         self.node = node; self.bm = bm
     def __str__(self) -> str:
         chain = self
+        depth = 0
         with io.StringIO() as sio:
             while chain is not None:
-                sio.write(f'\nNode: {self.node} failed @ {self.bm.pos} ({self.bm.lno+1}:{self.bm.cno})\n')
-                sio.write('\n'.join(self.args))
-                chain = chain.__context__
+                sio.write(f'\n<{depth}>Node: {chain.node} failed @ {chain.bm.pos} ({chain.bm.lno+1}:{chain.bm.cno})\n')
+                sio.write('\n'.join(chain.args))
+                chain = chain.__cause__
+                depth += 1
             return sio.getvalue().strip('\n')
 # Nodes
 class Node(metaclass=ABCMeta):
@@ -89,13 +91,13 @@ class NodeGroup(Node):
                 continue
             # Execute node
             try: res = n(bm)
-            except NodeSyntaxError:
-                raise NodeSyntaxError(self, bm, f'Node failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}')
+            except NodeSyntaxError as nse:
+                raise NodeSyntaxError(self, bm, f'Node failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}') from nse
             if res is self.NO_RETURN:
                 if not stealer:
                     bm.load_pos(save)
                     return self.NO_RETURN
-                nse = NodeSyntaxError(self, bm, f'Node failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}')
+                nse = NodeSyntaxError(self, bm, f'Node failed underneath node-group (index {i}){f"\n After: {self.nodes[i-1]}" if i else ""}')
                 nse.add_note(f'Note: stealer defined after node {after}')
                 raise nse from NodeSyntaxError(n, bm, 'Node failed to match')
             # Check how we should return results
