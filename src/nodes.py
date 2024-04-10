@@ -92,12 +92,12 @@ class NodeGroup(Node):
             # Execute node
             try: res = n(bm)
             except NodeSyntaxError as nse:
-                raise NodeSyntaxError(self, bm, f'Node failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}') from nse
+                raise NodeSyntaxError(self, bm, f'Node {i} failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}') from nse
             if res is self.NO_RETURN:
                 if not stealer:
                     bm.load_pos(save)
                     return self.NO_RETURN
-                nse = NodeSyntaxError(self, bm, f'Node failed underneath node-group (index {i}){f"\n After: {self.nodes[i-1]}" if i else ""}')
+                nse = NodeSyntaxError(self, bm, f'Node {i} failed underneath node-group {f"\n After: {self.nodes[i-1]}" if i else ""}')
                 nse.add_note(f'Note: stealer defined after node {after}')
                 raise nse from NodeSyntaxError(n, bm, 'Node failed to match')
             # Check how we should return results
