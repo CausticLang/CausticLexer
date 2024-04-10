@@ -153,6 +153,8 @@ class StringNode(Node):
     def __init__(self, string: bytes, **kwargs):
         super().__init__(**kwargs)
         self.string = string
+        if not self.string:
+            raise ValueError('Cannot use an empty string')
     def __call__(self, bm: SimpleBufferMatcher) -> object | bytes:
         if bm.match(self.string):
             return self.string
