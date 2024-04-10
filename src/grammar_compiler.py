@@ -30,6 +30,7 @@ PATTERNS = {
     'nonterminal': re.compile(br'([a-z]+)'),
     'regex': re.compile(br'/(?P<p>(?:[^/\\]|(?:\\.))*)/(?P<f>[ims]*)', re.DOTALL),
     'string': re.compile(br'''(?:"((?:[^\\"]|(?:\\.))*)")|(?:'((?:[^\\']|(?:\\.))*)')''', re.DOTALL),
+    'comment': re.compile(br'#.*$', re.MULTILINE),
 }
 
 def consume_whitespace(data: buffer_matcher.AbstractBufferMatcher):
@@ -41,8 +42,12 @@ def compile(data: buffer_matcher.AbstractBufferMatcher) -> cabc.Generator[tuple[
     '''Compiles a Caustic grammar file'''
     consume_whitespace(data)
     while (c := data.peek()):
-        if (((mt := data(PATTERNS['terminal'].match)) is not None)
-                or ((mnt := data(PATTERNS['nonterminal'].match)) is not None)):
+        if (data(PATTERNS['comment'].match) is not None):
+            # comment
+            consume_whitespace(data)
+            continue
+        if ((mt := data(PATTERNS['terminal'].match)) is not None) or \
+               (mnt := data(PATTERNS['nonterminal'].match) is not None):
             consume_whitespace(data)
             if (c := data.step()) != b'=':
                 raise ValueError(f'Unexpected character {bytes(c)!r} (expected {b"="!r}) at pos {data.pos} (line {data.lno} column {data.cno})')
