@@ -123,7 +123,7 @@ class NodeGroup(Node):
         if not results: return None
         return results
     def __str__(self) -> str:
-        return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.ignore_whitespace]} {" ".join(map(str, self.nodes))}{")}"[self.ignore_whitespace]}'
+        return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.ignore_whitespace]} {" ".join(map(str, self.nodes))} {")}"[self.ignore_whitespace]}'
 
 class NodeUnion(Node):
     '''Matches any of its nodes'''

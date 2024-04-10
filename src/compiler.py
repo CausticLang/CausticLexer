@@ -58,14 +58,13 @@ def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statemen
             bm.match(PATTERNS.discard)
         else: name = None
         # check for EOF
-        c = bm.peek(1)
-        if not c:
+        if not bm.peek():
             if name is None:
                 raise EOFError(f'Reached end of file before stop-mark {_stop!r}')
             raise EOFError('Reach end of file, but expected node after name-pattern')
         # nodes
         if (m := bm.match(PATTERNS.string)) is not None:
-            node = nodes.StringNode(codecs.escape_decode(m.group(1)))
+            node = nodes.StringNode(codecs.escape_decode(m.group(1))[0])
         elif (m := bm.match(PATTERNS.regex)) is not None:
             flags = re.NOFLAG
             for f in struct.unpack(f'{len(m.group("f"))}c', m.group('f')):
@@ -75,7 +74,7 @@ def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statemen
                 flags |= flag
             node = nodes.PatternNode(re.compile(m.group('p'), flags), None if m.group('g') is None else int(m.group('g')))
         else:
-            match bm.step():
+            match bm.read(1):
                 case CHARS.stealer:
                     if not _in_group:
                         raise SyntaxError(f'Cannot add stealer node outside of group (@{bm.pos} ({bm.lno+1}:{bm.cno}))')
