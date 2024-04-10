@@ -2,6 +2,7 @@
 
 #> Imports
 import re
+import codecs
 import struct
 import buffer_matcher
 from types import SimpleNamespace
@@ -64,7 +65,7 @@ def compile_expression(bm: buffer_matcher.AbstractBufferMatcher, *, _stop: bytes
             raise EOFError('Reach end of file, but expected node after name-pattern')
         # nodes
         if (m := bm(PATTERNS.string.match)) is not None:
-            node = nodes.StringNode(m.group(1))
+            node = nodes.StringNode(codecs.escape_decode(m.group(1)))
         elif (m := bm(PATTERNS.regex.match)) is not None:
             flags = re.NOFLAG
             for f in struct.unpack(f'{len(m.group("f"))}c', m.group('f')):
