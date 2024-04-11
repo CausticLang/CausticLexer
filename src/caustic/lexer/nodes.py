@@ -59,25 +59,28 @@ class Node(metaclass=ABCMeta):
 
 ## Groups
 class NodeGroup(Node):
-    '''A group of nodes'''
-    __slots__ = ('nodes', 'ignore_whitespace')
+    '''
+        A group of nodes
+        Discards whitespace between nodes if `keep_whitespace` is false
+    '''
+    __slots__ = ('nodes', 'keep_whitespace')
 
     nodes: tuple[Node, ...]
-    ignore_whitespace: bool
+    keep_whitespace: bool
 
     WHITESPACE_PATT = re.compile(r'\s+')
 
-    def __init__(self, *nodes: Node, ignore_whitespace: bool = False, **kwargs):
+    def __init__(self, *nodes: Node, keep_whitespace: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.nodes = nodes
-        self.ignore_whitespace = ignore_whitespace
+        self.keep_whitespace = keep_whitespace
     def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any] | list[typing.Any] | None:
         save = bm.save_pos()
         results = []
         single_result = False
         stealer = False; after = None
         for i,n in enumerate(self.nodes):
-            if not self.ignore_whitespace:
+            if not self.keep_whitespace:
                 bm.match(self.WHITESPACE_PATT)
             if isinstance(n, Stealer):
                 if stealer:

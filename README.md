@@ -48,7 +48,7 @@ The return value of this group will be dependent on its contents' [naming](#nami
 Mixing anonymous and named expressions in a single group will result in an error
 
 #### Whitespace sensitive group
-> `nodes.NodeGroup`, `ignore_whitespace=True`
+> `nodes.NodeGroup`, `keep_whitespace=True`
 
 A whitespace sensitive group is opened by `{` and closed by `}`  
 The only difference between this type of group and a normal group is that it does not implicitly
