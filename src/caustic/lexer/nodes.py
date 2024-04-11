@@ -65,6 +65,8 @@ class NodeGroup(Node):
     nodes: tuple[Node, ...]
     ignore_whitespace: bool
 
+    WHITESPACE_PATT = re.compile(r'\s+')
+
     def __init__(self, *nodes: Node, ignore_whitespace: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.nodes = nodes
@@ -75,6 +77,8 @@ class NodeGroup(Node):
         single_result = False
         stealer = False; after = None
         for i,n in enumerate(self.nodes):
+            if not self.ignore_whitespace:
+                bm.match(self.WHITESPACE_PATT)
             if isinstance(n, Stealer):
                 if stealer:
                     se = SyntaxError('Cannot have multiple stealers in the same group')
