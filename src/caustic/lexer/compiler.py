@@ -1,5 +1,7 @@
 #!/bin/python3
 
+'''Provides a basic compiler for converting `.cag` format to nodes'''
+
 #> Imports
 import re
 import codecs
@@ -12,7 +14,8 @@ from . import nodes
 #</Imports
 
 #> Header >/
-__all__ = ()
+__all__ = ('PATTERNS', 'CHARS', 'RE_FLAGS',
+           'compile', 'compile_expression')
 
 PATTERNS = SimpleNamespace(
     whitespace = re.compile(rb'\s+', re.MULTILINE),
@@ -35,7 +38,8 @@ CHARS = SimpleNamespace(
     stealer = b'!',
 )
 
-def compile(bm: SimpleBufferMatcher) -> cabc.Generator[tuple[str, nodes.Node], None, None]:
+def compile(bm: SimpleBufferMatcher) -> cabc.Generator[tuple[bytes, nodes.Node], None, None]:
+    '''Compiles `.cag` format into nodes'''
     while True:
         bm.match(PATTERNS.discard)
         if not bm.peek(1): return # EOF
@@ -52,6 +56,7 @@ RE_FLAGS = {
 
 def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statement_stop,
                        _in_group: bool = False) -> cabc.Generator[nodes.Node, None, None]:
+    '''Compiles expressions into nodes'''
     while True:
         bm.match(PATTERNS.discard)
         # pre-nodes

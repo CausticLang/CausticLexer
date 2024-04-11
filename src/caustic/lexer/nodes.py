@@ -1,5 +1,7 @@
 #!/bin/python3
 
+'''Provides nodes for matching grammar'''
+
 #> Imports
 import io
 import re
@@ -16,6 +18,7 @@ __all__ = ('NodeSyntaxError',
 #> Header >/
 # Exceptions
 class NodeSyntaxError(SyntaxError):
+    '''For when nodes fail to match something that must be matched'''
     __slots__ = ('node',)
 
     node: 'Node'
