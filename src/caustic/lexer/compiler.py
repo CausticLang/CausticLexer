@@ -22,6 +22,7 @@ PATTERNS = SimpleNamespace(
     named = re.compile(rb'([\w]*):'),
     string = re.compile(rb'"((?:[^\\"]|(?:\\.))*)"'),
     regex = re.compile(rb'(?P<g>\d)?/(?P<p>(?:[^\\/]|(?:\\.))+)/(?P<f>[ims]*)'),
+    context = re.compile(rb'(\w*)'),
 )
 PATTERNS.discard = re.compile(b'((' + PATTERNS.whitespace.pattern + b')|(' + PATTERNS.comment.pattern + b'))+', re.MULTILINE)
 
@@ -30,6 +31,7 @@ CHARS = SimpleNamespace(
     group_start = b'(', group_stop = b')',
     group_nospace_start = b'{', group_nospace_stop = b'}',
     union_start = b'[', union_stop = b']',
+    context_start = b'<', context_stop = b'>',
     stealer = b'!',
 )
 
@@ -87,6 +89,18 @@ def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statemen
                     node = nodes.NodeGroup(*tuple(compile_expression(bm, _stop=CHARS.group_nospace_stop, _in_group=True)))
                 case CHARS.union_start:
                     node = nodes.NodeUnion(*tuple(compile_expression(bm, _stop=CHARS.union_stop, _in_group=False)))
+                case CHARS.context_start:
+                    bm.match(PATTERNS.discard)
+                    if (m := bm.match(PATTERNS.string)) is not None:
+                        node = nodes.Context(codecs.escape_decode(m.group(1))[0])
+                    else:
+                        if (m := bm.match(PATTERNS.context)) is not None:
+                            node = nodes.Context(codecs.escape_decode(m.group(1))[0])
+                        else:
+                            raise SyntaxError(f'Expected either "string" pattern {PATTERNS.string.pattern} or only alphanumeric characters or underscore at {bm.pos} ({bm.lno+1}:{bm.cno})')
+                    bm.match(PATTERNS.discard)
+                    if (c := bm.read(1)) != CHARS.context_stop:
+                        raise SyntaxError(f'Expected context stop {CHARS.context_stop!r}, not {bytes(c)!r} at {bm.pos} ({bm.lno+1}:{bm.cno})')
                 case _ as c:
                     if c != _stop:
                         raise SyntaxError(f'Expected node--unknown character {bytes(c)!r} at {bm.pos} ({bm.lno+1}:{bm.cno})')

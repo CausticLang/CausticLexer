@@ -11,7 +11,7 @@ from buffer_matcher import SimpleBufferMatcher
 __all__ = ('NodeSyntaxError',
            'Node', 'NodeGroup', 'NodeUnion',
            'StringNode', 'PatternNode',
-           'Stealer')
+           'Stealer', 'Context',)
 
 #> Header >/
 # Exceptions
@@ -187,3 +187,16 @@ class Stealer(Node):
     def __call__(self, *args, **kwargs):
         raise TypeError(f'Stealer nodes should not be called')
     def __str__(self) -> str: return '!'
+class Context(Node):
+    '''Marks a special "context" node that always matches'''
+    __slots__ = ('val',)
+
+    val: typing.Any
+
+    def __init__(self, val: typing.Any, **kwargs):
+        assert val is not self.NO_RETURN, 'Cannot use NO_RETURN marker object for Context val'
+        super().__init__(**kwargs)
+        self.val = val
+    def __call__(self, bm: SimpleBufferMatcher) -> typing.Any:
+        return self.val
+    def __str__(self) -> str: return f'{"" if self.name is None else f"{self.name}:"}< {self.val} >'
