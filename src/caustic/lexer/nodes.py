@@ -11,7 +11,7 @@ from buffer_matcher import SimpleBufferMatcher
 #</Imports
 
 __all__ = ('NodeSyntaxError',
-           'Node', 'NodeGroup', 'NodeUnion',
+           'Node', 'NodeGroup', 'NodeUnion', 'NodeRange',
            'StringNode', 'PatternNode',
            'Stealer', 'Context', 'NodeRef')
 
@@ -149,6 +149,40 @@ class NodeUnion(Node):
     def __str__(self) -> str:
         return f'{"" if self.name is None else f"{self.name}:"}[ {" ".join(map(str, self.nodes))} ]'
 
+class NodeRange(Node):
+    '''
+        Matches between `min` and `max` nodes,
+            or any amount over `min` if `max` is `None`
+    '''
+    __slots__ = ('min', 'max', 'node')
+
+    def __init__(self, node: Node, min: int | None, max: int | None, **kwargs):
+        super().__init__(**kwargs)
+        if min is None: min = 0
+        else: assert min >= 0, 'min should not be negative'
+        assert (max is None) or (max >= 0), 'max should be None or more than or equal to min'
+        self.min = min
+        self.max = max
+    def __call__(self, bm: SimpleBufferMatcher) -> object | list[typing.Any]:
+        results = []
+        save = bm.save_pos()
+        for _ in range(self.min):
+            results.append(self.node(bm))
+            if results[-1] is self.NO_RETURN:
+                self.load_pos()
+                return self.NO_RETURN
+        if self.max is None:
+            while (res := self.node(bm)) is not self.NO_RETURN:
+                results.append(res)
+        else:
+            for _ in range(self.min, self.max):
+                res = self.node(bm)
+                if res is self.NO_RETURN: break
+                results.append(res)
+        return results
+    def __str__(self) -> str:
+        return f'{self.min or ""}.{"" if self.max is None else {self.max}}~ {self.node}'
+
 ## Real
 class StringNode(Node):
     '''Matches a specific string'''
@@ -217,7 +251,7 @@ class NodeRef(Node):
     target_name: bytes
     target: Node | None
 
-    def __init__(self, target: bytes):
+    def __init__(self, target: bytes, **kwargs):
         super().__init__(**kwargs)
         self.target_name = target
         self.target = None

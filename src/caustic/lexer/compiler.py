@@ -27,6 +27,7 @@ PATTERNS = SimpleNamespace(
     regex = re.compile(rb'(?P<g>\d)?/(?P<p>(?:[^\\/]|(?:\\.))+)/(?P<f>[ims]*)'),
     context = re.compile(rb'(\w*)'),
     noderef = re.compile(rb'@(\w+)'),
+    noderange = re.compile(rb'(?P<min>\d*)\.(?P<max>\d*)~'),
 )
 PATTERNS.discard = re.compile(b'((' + PATTERNS.whitespace.pattern + b')|(' + PATTERNS.comment.pattern + b'))+', re.MULTILINE)
 
@@ -40,10 +41,11 @@ CHARS = SimpleNamespace(
 )
 
 def compile(bm: SimpleBufferMatcher) -> dict[bytes, nodes.Node]:
-    nodes = dict(compile_iter(bm))
-    for name,node in nodes.items():
+    cnodes = dict(compile_iter(bm))
+    for name,node in cnodes.items():
         if isinstance(node, nodes.NodeRef):
-            node.bind(nodes)
+            node.bind(cnodes)
+    return cnodes
 def compile_iter(bm: SimpleBufferMatcher) -> cabc.Generator[tuple[bytes, nodes.Node], None, None]:
     '''
         Compiles `.cag` format into nodes,
@@ -74,6 +76,10 @@ def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statemen
             name = m.group(1).decode()
             bm.match(PATTERNS.discard)
         else: name = None
+        if (m := bm.match(PATTERNS.noderange)) is not None:
+            nrange = (int(m.group(1) or 0), (int(m.group(2)) if m.group(2) else None))
+            bm.match(PATTERNS.discard)
+        else: nrange = None
         # check for EOF
         if not bm.peek():
             if name is None:
@@ -126,5 +132,7 @@ def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statemen
                     return
         # finish and yield
         bm.match(PATTERNS.discard)
+        if nrange is not None:
+            node = nodes.NodeRange(node, *nrange, name=name)
         node.name = name
         yield node
