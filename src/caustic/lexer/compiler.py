@@ -56,7 +56,7 @@ def compile_iter(bm: SimpleBufferMatcher) -> cabc.Generator[tuple[bytes, nodes.N
         bm.match(PATTERNS.discard)
         if not bm.peek(1): return # EOF
         if (m := bm.match(PATTERNS.statement)) is not None:
-            yield (m.group(1), nodes.NodeGroup(*tuple(compile_expression(bm))))
+            yield (m.group(1), nodes.NodeGroup(*tuple(compile_expression(bm, _in_group=True))))
         else:
             raise ValueError(f'Expected statement at {bm.pos} ({bm.lno+1}:{bm.cno})')
 
