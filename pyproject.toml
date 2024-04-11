@@ -7,8 +7,20 @@ authors = [{name="Shae.c32"}]
 maintainers = []
 description = "Grammar compilation for Caustic"
 readme = "README.md"
-keywords = []
-classifiers = []
+keywords = ['caustic', 'language', 'parser', 'lexer']
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Other",
+    "Topic :: File Formats",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Software Development :: Interpreters",
+    "Topic :: Software Development :: Pre-processors",
+    "Topic :: Text Processing",
+]
 
 [project.urls]
 Homepage = "https://codeberg.org/Caustic/CausticLexer"
