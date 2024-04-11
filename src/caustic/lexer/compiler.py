@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from buffer_matcher import SimpleBufferMatcher
 from collections import abc as cabc
 
-import nodes
+from . import nodes
 #</Imports
 
 #> Header >/
