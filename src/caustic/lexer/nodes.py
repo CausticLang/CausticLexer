@@ -31,12 +31,13 @@ class NodeSyntaxError(SyntaxError):
         chain = self
         depth = 0
         with io.StringIO() as sio:
+            sio.write('Node syntax exception chain (most recent failure last):')
             while chain is not None:
                 sio.write(f'\n<{depth}>Node: {chain.node} failed @ {chain.bm.pos} ({chain.bm.lno+1}:{chain.bm.cno})\n')
                 sio.write('\n'.join(chain.args))
                 chain = chain.__cause__
                 depth += 1
-            return sio.getvalue().strip('\n')
+            return sio.getvalue()
 # Nodes
 ## Base
 class Node(metaclass=ABCMeta):
@@ -56,7 +57,7 @@ class Node(metaclass=ABCMeta):
         for node in self.nodes: node.bind(nodes)
 
     @abstractmethod
-    def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any]:
+    def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> object | dict[str, typing.Any]:
         '''Executes this node on `data`'''
     @abstractmethod
     def __str__(self) -> str: pass
@@ -80,11 +81,11 @@ class NodeGroup(Node):
         self.nodes = nodes
         self.keep_whitespace = keep_whitespace
 
-    def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any] | list[typing.Any] | None:
+    def __call__(self, bm: SimpleBufferMatcher, stealer: bool = False) -> object | dict[str, typing.Any] | list[typing.Any] | None:
         save = bm.save_pos()
         results = []
         single_result = False
-        stealer = False; after = None
+        after = None
         for i,n in enumerate(self.nodes):
             if not self.keep_whitespace:
                 bm.match(self.WHITESPACE_PATT)
@@ -97,16 +98,13 @@ class NodeGroup(Node):
                 after = self.nodes[-1]
                 continue
             # Execute node
-            try: res = n(bm)
+            try: res = n(bm, stealer=stealer)
             except NodeSyntaxError as nse:
-                raise NodeSyntaxError(self, bm, f'Node {i} failed underneath node-group{f"\n After: {self.nodes[i-1]}" if i else ""}') from nse
+                raise NodeSyntaxError(self, bm, f'Node {i} failed underneath node-group') from nse
             if res is self.NO_RETURN:
-                if not stealer:
-                    bm.load_pos(save)
-                    return self.NO_RETURN
-                nse = NodeSyntaxError(self, bm, f'Node {i} failed underneath node-group {f"\n After: {self.nodes[i-1]}" if i else ""}')
-                nse.add_note(f'Note: stealer defined after node {after}')
-                raise nse from NodeSyntaxError(n, bm, 'Node failed to match')
+                assert not stealer
+                bm.load_pos(save)
+                return self.NO_RETURN
             # Check how we should return results
             if n.name is None: # not assigned a name ("[name]:<node>")
                 if isinstance(results, dict): continue # don't add it
@@ -145,10 +143,11 @@ class NodeUnion(Node):
         super().__init__(**kwargs)
         self.nodes = nodes
 
-    def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any]:
+    def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> object | dict[str, typing.Any]:
         for n in self.nodes:
             if (res := n(bm)) is not self.NO_RETURN:
                 return res
+        if stealer: raise NodeSyntaxError(self, bm, f'Expected union {self}')
         return self.NO_RETURN
 
     def __str__(self) -> str:
@@ -174,11 +173,13 @@ class NodeRange(Node):
         '''Binds the underlying node, if applicable'''
         return self.node.bind(nodes)
 
-    def __call__(self, bm: SimpleBufferMatcher) -> object | list[typing.Any]:
+    def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> object | list[typing.Any]:
         results = []
         save = bm.save_pos()
         for _ in range(self.min):
-            results.append(self.node(bm))
+            try: results.append(self.node(bm, stealer=stealer))
+            except NodeSyntaxError as nse:
+                raise NodeSyntaxError(self, bm, f'Expected at least {self.min} of {self.node}') from nse
             if results[-1] is self.NO_RETURN:
                 self.load_pos()
                 return self.NO_RETURN
@@ -208,9 +209,11 @@ class StringNode(Node):
         if not self.string:
             raise ValueError('Cannot use an empty string')
 
-    def __call__(self, bm: SimpleBufferMatcher) -> object | bytes:
+    def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> object | bytes:
         if bm.match(self.string):
             return self.string
+        if stealer:
+            raise NodeSyntaxError(self, bm, f'Expected string {self}')
         return self.NO_RETURN
 
     def __str__(self) -> str:
@@ -227,9 +230,11 @@ class PatternNode(Node):
         self.pattern = pattern
         self.group = group
 
-    def __call__(self, bm: SimpleBufferMatcher) -> object | re.Match | bytes:
+    def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> object | re.Match | bytes:
         if (m := bm.match(self.pattern)) is not None:
             return m.group(self.group) if self.group else m
+        if stealer:
+            raise NodeSyntaxError(self, bm, f'Expected pattern {self}')
         return self.NO_RETURN
 
     FLAGS = {'i': re.IGNORECASE, 'm': re.MULTILINE, 's': re.DOTALL}
@@ -259,7 +264,7 @@ class Context(Node):
         super().__init__(**kwargs)
         self.val = val
 
-    def __call__(self, bm: SimpleBufferMatcher) -> typing.Any:
+    def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> typing.Any:
         return self.val
 
     def __str__(self) -> str: return f'{"" if self.name is None else f"{self.name}:"}< {self.val} >'
@@ -288,10 +293,13 @@ class NodeRef(Node):
         self.target = targets.get(self.target_name)
         return self.target is not None
 
-    def __call__(self, bm: SimpleBufferMatcher):
+    def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> typing.Any:
         if not self.bound:
             raise TypeError(f'Cannot call an unbound NodeRef (node target {self.target_name} was never bound)')
-        return self.target(bm)
+        try: return self.target(bm, stealer)
+        except NodeSyntaxError as nse:
+            nse.add_note(f'Under reference {self}')
+            raise nse
 
     def __str__(self) -> str:
         return f'@{self.target_name!r}'
