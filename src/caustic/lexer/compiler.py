@@ -65,20 +65,52 @@ def compile_buffermatcher(bm: buffer_matcher.SimpleBufferMatcher, source: Path |
     if grammar is None:
         raise FileNotFoundError('The default grammar did not exist at module import and as such can not be used')
     grammars = {}
-    while (bm.peek(1)):
-        while bm.match(nodes.WHITESPACE_PATT) or (grammar[b'COMMENT'](bm) is not nodes.Node.NO_RETURN): pass
-        if not (c := bm.peek(1)): break
-        stmt = grammar[b'STATEMENT'](bm)
-        if stmt is nodes.Node.NO_RETURN:
-            raise SyntaxError(f'Unexpected character: {c!r}')
-        grammars[stmt['name']] = stmt['expr']
-    return compile_dict(grammars)
+    imports = {}; includes = {}
+    try:
+        while (bm.peek(1)):
+            while bm.match(nodes.WHITESPACE_PATT) or (grammar[b'COMMENT'](bm) is not nodes.Node.NO_RETURN): pass
+            if not bm.peek(1): break
+            if (p := grammar[b'PRAGMA'](bm)) is not nodes.Node.NO_RETURN:
+                match p['type']:
+                    case b'import' | b'include':
+                        f = Path(p['args'].decode())
+                        if not f.is_absolute():
+                            if isinstance(source, Path) and (nf := (source.parent / f)).is_file(): f = nf
+                            elif (nf := (Path.cwd() / f)).is_file(): f = nf
+                            elif (nf := (builtin_path.parent / f)).is_file(): f = nf
+                            else: raise FileNotFoundError(f'Cannot parse include: {f}')
+                        try: (includes if p['type'] == b'include' else imports).update(compile(f))
+                        except Exception as e:
+                            e.add_note(f'In {p["type"].decode()}')
+                            raise e
+                    case _ as t:
+                        raise TypeError(f'Unknown pragma type {t!r}')
+                continue
+            stmt = grammar[b'STATEMENT'](bm)
+            if stmt is nodes.Node.NO_RETURN:
+                raise SyntaxError(f'Unexpected character: {c!r}')
+            grammars[stmt['name']] = stmt['expr']
+    except Exception as e:
+        e.add_note(f'Whilst parsing grammar from: {"<buffermatcher>" if source is None else source}')
+        e.add_note(f'At position {bm.pos} ({bm.lno+1}:{bm.cno})')
+        raise e
+    grammars = compile_dict(grammars, source=source, grammar=grammar) | includes
+    bind_nodes(grammars)
+    return grammars | imports
 @compile.register
 def compile_dict(data: dict, *, source: Path | str | None = '<dict>', grammar: dict[bytes, nodes.Node] = None) -> dict[bytes, nodes.Node]:
     '''Compiles a dictionary of preprocessed tokens'''
-    cnodes = {name: compile_node(b'group', expr) for name,expr in data.items()}
-    for node in cnodes.values(): node.bind(cnodes)
+    try:
+        cnodes = {name: compile_node(b'group', expr) for name,expr in data.items()}
+    except Exception as e:
+        e.add_note(f'Whilst compiling grammar from: {"<dict>" if source is None else source}')
+        raise e
+    bind_nodes(cnodes)
     return cnodes
+
+def bind_nodes(nodes: dict[bytes, nodes.Node]) -> None:
+    '''Cross-binds all nodes'''
+    for node in nodes.values(): node.bind(nodes)
 
 def compile_node_name(name: bytes | str | None, expr: dict) -> nodes.Node:
     '''Compiles a node and names it'''

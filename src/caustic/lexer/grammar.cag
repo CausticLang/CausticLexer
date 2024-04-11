@@ -1,6 +1,7 @@
 # Statements / comments
 COMMENT = "#" ! /.*?$/m ;
 STATEMENT = name:1/(\w+)/ "=" ! expr: - @EXPRESSION ";" ;
+PRAGMA = "$" type:0/\w+/ args:1/(.*?)$/m ;
 
 # Expression supergroup
 EXPRESSION = name:1/(?:(\w*):)?/ expr:[

@@ -11,6 +11,24 @@ supplying nodes
 
 # The `.cag` specification
 
+## Pragmas
+Pragmas are special directives embedded in the grammar  
+These are only supported on the bootstrapped `compile` module
+
+### Include / Import
+> `$include [path]`, `$import [path]`
+
+Allows putting multiple grammar files together
+
+Relative paths provided as `[path]` will be checked against the following
+directories, in order:
+- The path of the includer/importer (if possible)
+- The `builtin_path` of the `compiler` module (the location of `compiler.py`)
+- The current directory
+
+The difference between include and import is that included nodes will be bound
+with the rest of the nodes from the includer, whilst imported nodes will not
+
 ## Comments
 Comments may start with a `#`
 
