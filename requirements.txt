@@ -1,2 +1,1 @@
-regex-compose >= 0.0.3
-buffer-matcher >= 0.1.0
+buffer-matcher >= 0.1.1
