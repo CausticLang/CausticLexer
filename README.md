@@ -1,7 +1,10 @@
 Caustic's lexing/grammar framework
 
-The `compile` module allows compilation of Caustic grammar files (`.cag`, see below)
-into nodes
+The `basic_compiler` module is a less advanced compiler, but is used to
+bootstrap the `compiler` module
+
+The `compiler` module compiles grammars from Caustic grammar (`.cag`) files into nodes,
+and uses a grammer system built in Caustic grammar format and compiled with the `basic_compiler` module
 
 The `nodes` module provides the nodes themselves, and allows manually building grammar by
 supplying nodes
