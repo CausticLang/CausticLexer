@@ -68,7 +68,7 @@ class NodeGroup(Node):
     nodes: tuple[Node, ...]
     keep_whitespace: bool
 
-    WHITESPACE_PATT = re.compile(r'\s+')
+    WHITESPACE_PATT = re.compile(rb'\s+')
 
     def __init__(self, *nodes: Node, keep_whitespace: bool = False, **kwargs):
         super().__init__(**kwargs)
@@ -130,7 +130,7 @@ class NodeGroup(Node):
         if not results: return None
         return results
     def __str__(self) -> str:
-        return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.ignore_whitespace]} {" ".join(map(str, self.nodes))} {")}"[self.ignore_whitespace]}'
+        return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.keep_whitespace]} {" ".join(map(str, self.nodes))} {")}"[self.keep_whitespace]}'
 
 class NodeUnion(Node):
     '''Matches any of its nodes'''
@@ -163,6 +163,7 @@ class NodeRange(Node):
         assert (max is None) or (max >= 0), 'max should be None or more than or equal to min'
         self.min = min
         self.max = max
+        self.node = node
     def __call__(self, bm: SimpleBufferMatcher) -> object | list[typing.Any]:
         results = []
         save = bm.save_pos()
