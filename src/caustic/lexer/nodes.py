@@ -9,8 +9,9 @@ from buffer_matcher import SimpleBufferMatcher
 #</Imports
 
 __all__ = ('NodeSyntaxError',
-           'Node', 'Stealer', 'NodeGroup', 'NodeUnion',
-           'StringNode', 'PatternNode')
+           'Node', 'NodeGroup', 'NodeUnion',
+           'StringNode', 'PatternNode',
+           'Stealer')
 
 #> Header >/
 # Exceptions
@@ -34,6 +35,7 @@ class NodeSyntaxError(SyntaxError):
                 depth += 1
             return sio.getvalue().strip('\n')
 # Nodes
+## Base
 class Node(metaclass=ABCMeta):
     '''The base class for all nodes'''
     __slots__ = ('name',)
@@ -52,14 +54,7 @@ class Node(metaclass=ABCMeta):
     def __str__(self) -> str: pass
     def __repr__(self) -> str: return str(self)
 
-class Stealer(Node):
-    '''Marks a special "stealer" node'''
-    __slots__ = ()
-
-    def __call__(self, *args, **kwargs):
-        raise TypeError(f'Stealer nodes should not be called')
-    def __str__(self) -> str: return '!'
-
+## Groups
 class NodeGroup(Node):
     '''A group of nodes'''
     __slots__ = ('nodes', 'ignore_whitespace')
@@ -144,6 +139,7 @@ class NodeUnion(Node):
     def __str__(self) -> str:
         return f'{"" if self.name is None else f"{self.name}:"}[ {" ".join(map(str, self.nodes))} ]'
 
+## Real
 class StringNode(Node):
     '''Matches a specific string'''
     __slots__ = ('string',)
@@ -182,3 +178,12 @@ class PatternNode(Node):
                 f'{"" if self.group is None else self.group}/'
                 f'{self.pattern.pattern.decode(errors="backslashreplace").replace("/", "\\/")}/'
                 f'{"".join(f for f,v in self.FLAGS.items() if v & self.pattern.flags)}')
+
+## Meta
+class Stealer(Node):
+    '''Marks a special "stealer" node'''
+    __slots__ = ()
+
+    def __call__(self, *args, **kwargs):
+        raise TypeError(f'Stealer nodes should not be called')
+    def __str__(self) -> str: return '!'
