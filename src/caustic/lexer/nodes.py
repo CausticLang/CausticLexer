@@ -239,7 +239,7 @@ class PatternNode(Node):
 
     def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> object | re.Match | bytes:
         if (m := bm.match(self.pattern)) is not None:
-            return m.group(self.group) if self.group else m
+            return m.group(self.group) if self.group is not None else m
         if stealer:
             raise NodeSyntaxError(self, bm, f'Expected pattern {self}')
         return self.NO_RETURN
