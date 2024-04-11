@@ -89,12 +89,8 @@ class NodeGroup(Node):
             if not self.keep_whitespace:
                 bm.match(self.WHITESPACE_PATT)
             if isinstance(n, Stealer):
-                if stealer:
-                    se = SyntaxError('Cannot have multiple stealers in the same group')
-                    se.add_note(str(self))
-                    raise se
                 if not i:
-                    se = SyntaxError('Cannot have steal at the beginning of a group')
+                    se = SyntaxError('Cannot have a stealer at the beginning of a group')
                     se.add_note(str(self))
                     raise se
                 stealer = True
