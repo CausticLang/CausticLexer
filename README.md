@@ -86,3 +86,14 @@ Supports these common RegEx flags:
 - `i`: ignore case / case insensitive
 - `m`: multiline - `^` matches beginning of line or string, `$` matches end of either
 - `s`: single-line / "dotall" - `.` matches newlines as well
+
+### Meta
+"Meta" nodes that don't actually match anything, but can change some context
+
+#### Stealer
+> `nodes.Stealer`
+
+A "stealer" node is denoted by a `!`, and is only acceptable in a group
+
+If a [group](#group) reaches a "stealer" node, then the group will raise an exception
+if any of the subsequent nodes fail
