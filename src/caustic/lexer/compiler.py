@@ -103,7 +103,7 @@ def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statemen
                 case CHARS.group_start:
                     node = nodes.NodeGroup(*tuple(compile_expression(bm, _stop=CHARS.group_stop, _in_group=True)))
                 case CHARS.group_nospace_start:
-                    node = nodes.NodeGroup(*tuple(compile_expression(bm, _stop=CHARS.group_nospace_stop, _in_group=True)))
+                    node = nodes.NodeGroup(*tuple(compile_expression(bm, _stop=CHARS.group_nospace_stop, _in_group=True)), keep_whitespace=True)
                 case CHARS.union_start:
                     node = nodes.NodeUnion(*tuple(compile_expression(bm, _stop=CHARS.union_stop, _in_group=False)))
                 case CHARS.context_start:
