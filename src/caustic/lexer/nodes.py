@@ -10,12 +10,14 @@ from abc import ABCMeta, abstractmethod
 from buffer_matcher import SimpleBufferMatcher
 #</Imports
 
-__all__ = ('NodeSyntaxError',
+#> Header >/
+__all__ = ('WHITESPACE_PATT', 'NodeSyntaxError',
            'Node', 'NodeGroup', 'NodeUnion', 'NodeRange',
            'StringNode', 'PatternNode',
            'Stealer', 'Context', 'NodeRef')
 
-#> Header >/
+WHITESPACE_PATT = re.compile(rb'\s+')
+
 # Exceptions
 class NodeSyntaxError(SyntaxError):
     '''For when nodes fail to match something that must be matched'''
@@ -74,8 +76,6 @@ class NodeGroup(Node):
     nodes: tuple[Node, ...]
     keep_whitespace: bool
 
-    WHITESPACE_PATT = re.compile(rb'\s+')
-
     def __init__(self, *nodes: Node, keep_whitespace: bool = False, **kwargs):
         super().__init__(**kwargs)
         self.nodes = nodes
@@ -88,7 +88,7 @@ class NodeGroup(Node):
         after = None
         for i,n in enumerate(self.nodes):
             if not self.keep_whitespace:
-                bm.match(self.WHITESPACE_PATT)
+                bm.match(WHITESPACE_PATT)
             if isinstance(n, Stealer):
                 if not i:
                     se = SyntaxError('Cannot have a stealer at the beginning of a group')
@@ -158,9 +158,9 @@ class NodeRange(Node):
         Matches between `min` and `max` nodes,
             or any amount over `min` if `max` is `None`
     '''
-    __slots__ = ('min', 'max', 'node')
+    __slots__ = ('min', 'max', 'node', 'keep_whitespace')
 
-    def __init__(self, node: Node, min: int | None, max: int | None, **kwargs):
+    def __init__(self, node: Node, min: int | None, max: int | None, *, keep_whitespace: bool = False, **kwargs):
         super().__init__(**kwargs)
         if min is None: min = 0
         else: assert min >= 0, 'min should not be negative'
@@ -168,6 +168,7 @@ class NodeRange(Node):
         self.min = min
         self.max = max
         self.node = node
+        self.keep_whitespace = keep_whitespace
 
     def bind(self, nodes: dict[bytes, Node]) -> bool | None:
         '''Binds the underlying node, if applicable'''
@@ -183,14 +184,20 @@ class NodeRange(Node):
             if results[-1] is self.NO_RETURN:
                 self.load_pos()
                 return self.NO_RETURN
+            if not self.keep_whitespace:
+                bm.match(WHITESPACE_PATT)
         if self.max is None:
             while (res := self.node(bm)) is not self.NO_RETURN:
                 results.append(res)
+                if not self.keep_whitespace:
+                    bm.match(WHITESPACE_PATT)
         else:
             for _ in range(self.min, self.max):
                 res = self.node(bm)
                 if res is self.NO_RETURN: break
                 results.append(res)
+                if not self.keep_whitespace:
+                    bm.match(WHITESPACE_PATT)
         return results
 
     def __str__(self) -> str:

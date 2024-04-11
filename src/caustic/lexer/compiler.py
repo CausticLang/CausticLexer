@@ -27,7 +27,8 @@ PATTERNS = SimpleNamespace(
     regex = re.compile(rb'(?P<g>\d)?/(?P<p>(?:[^\\/]|(?:\\.))+)/(?P<f>[ims]*)'),
     context = re.compile(rb'(\w*)'),
     noderef = re.compile(rb'@(\w+)'),
-    noderange = re.compile(rb'(?P<min>\d*)\.(?P<max>\d*)~'),
+    noderange = re.compile(rb'(?P<min>\d*)\-(?P<max>\d*)'),
+    noderange_ws_sensitive = re.compile(rb'(?P<min>\d*)~(?P<max>\d*)'),
 )
 PATTERNS.discard = re.compile(b'((' + PATTERNS.whitespace.pattern + b')|(' + PATTERNS.comment.pattern + b'))+', re.MULTILINE)
 
@@ -77,7 +78,10 @@ def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statemen
             bm.match(PATTERNS.discard)
         else: name = None
         if (m := bm.match(PATTERNS.noderange)) is not None:
-            nrange = (int(m.group(1) or 0), (int(m.group(2)) if m.group(2) else None))
+            nrange = {'min': int(m.group(1) or 0), 'max': (int(m.group(2)) if m.group(2) else None), 'keep_whitespace': False}
+            bm.match(PATTERNS.discard)
+        elif (m := bm.match(PATTERNS.noderange_ws_sensitive)) is not None:
+            nrange = {'min': int(m.group(0) or 0), 'max': (int(m.group(2)) if m.group(2) else None), 'keep_whitespace': True}
             bm.match(PATTERNS.discard)
         else: nrange = None
         # check for EOF
@@ -133,6 +137,6 @@ def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statemen
         # finish and yield
         bm.match(PATTERNS.discard)
         if nrange is not None:
-            node = nodes.NodeRange(node, *nrange, name=name)
+            node = nodes.NodeRange(node, **nrange, name=name)
         node.name = name
         yield node
