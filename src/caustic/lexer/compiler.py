@@ -43,8 +43,8 @@ CHARS = SimpleNamespace(
 def compile(bm: SimpleBufferMatcher) -> dict[bytes, nodes.Node]:
     cnodes = dict(compile_iter(bm))
     for name,node in cnodes.items():
-        if isinstance(node, nodes.NodeRef):
-            node.bind(cnodes)
+        if (fn := getattr(node, 'bind', None)) is not None:
+            fn(cnodes)
     return cnodes
 def compile_iter(bm: SimpleBufferMatcher) -> cabc.Generator[tuple[bytes, nodes.Node], None, None]:
     '''

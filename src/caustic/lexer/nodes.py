@@ -50,6 +50,11 @@ class Node(metaclass=ABCMeta):
     def __init__(self, *, name: str | None = None):
         self.name = name
 
+    def bind(self, nodes: dict[bytes, typing.Self]) -> None:
+        '''Binds all sub-nodes, if possible'''
+        if not hasattr(self, 'nodes'): return
+        for node in self.nodes: node.bind(nodes)
+
     @abstractmethod
     def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any]:
         '''Executes this node on `data`'''
@@ -74,6 +79,7 @@ class NodeGroup(Node):
         super().__init__(**kwargs)
         self.nodes = nodes
         self.keep_whitespace = keep_whitespace
+
     def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any] | list[typing.Any] | None:
         save = bm.save_pos()
         results = []
@@ -129,6 +135,7 @@ class NodeGroup(Node):
                 results = res
         if not results: return None
         return results
+
     def __str__(self) -> str:
         return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.keep_whitespace]} {" ".join(map(str, self.nodes))} {")}"[self.keep_whitespace]}'
 
@@ -141,11 +148,13 @@ class NodeUnion(Node):
     def __init__(self, *nodes: Node, **kwargs):
         super().__init__(**kwargs)
         self.nodes = nodes
+
     def __call__(self, bm: SimpleBufferMatcher) -> object | dict[str, typing.Any]:
         for n in self.nodes:
             if (res := n(bm)) is not self.NO_RETURN:
                 return res
         return self.NO_RETURN
+
     def __str__(self) -> str:
         return f'{"" if self.name is None else f"{self.name}:"}[ {" ".join(map(str, self.nodes))} ]'
 
@@ -164,6 +173,11 @@ class NodeRange(Node):
         self.min = min
         self.max = max
         self.node = node
+
+    def bind(self, nodes: dict[bytes, Node]) -> bool | None:
+        '''Binds the underlying node, if applicable'''
+        return self.node.bind(nodes)
+
     def __call__(self, bm: SimpleBufferMatcher) -> object | list[typing.Any]:
         results = []
         save = bm.save_pos()
@@ -181,6 +195,7 @@ class NodeRange(Node):
                 if res is self.NO_RETURN: break
                 results.append(res)
         return results
+
     def __str__(self) -> str:
         return f'{self.min or ""}.{"" if self.max is None else {self.max}}~ {self.node}'
 
@@ -196,10 +211,12 @@ class StringNode(Node):
         self.string = string
         if not self.string:
             raise ValueError('Cannot use an empty string')
+
     def __call__(self, bm: SimpleBufferMatcher) -> object | bytes:
         if bm.match(self.string):
             return self.string
         return self.NO_RETURN
+
     def __str__(self) -> str:
         return f'"{"" if self.name is None else f"{self.name}:"}{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"'
 class PatternNode(Node):
@@ -213,10 +230,12 @@ class PatternNode(Node):
         super().__init__(**kwargs)
         self.pattern = pattern
         self.group = group
+
     def __call__(self, bm: SimpleBufferMatcher) -> object | re.Match | bytes:
         if (m := bm.match(self.pattern)) is not None:
             return m.group(self.group) if self.group else m
         return self.NO_RETURN
+
     FLAGS = {'i': re.IGNORECASE, 'm': re.MULTILINE, 's': re.DOTALL}
     def __str__(self) -> str:
         return (f'{"" if self.name is None else f"{self.name}:"}'
@@ -231,6 +250,7 @@ class Stealer(Node):
 
     def __call__(self, *args, **kwargs):
         raise TypeError(f'Stealer nodes should not be called')
+
     def __str__(self) -> str: return '!'
 class Context(Node):
     '''Marks a special "context" node that always matches'''
@@ -242,8 +262,10 @@ class Context(Node):
         assert val is not self.NO_RETURN, 'Cannot use NO_RETURN marker object for Context val'
         super().__init__(**kwargs)
         self.val = val
+
     def __call__(self, bm: SimpleBufferMatcher) -> typing.Any:
         return self.val
+
     def __str__(self) -> str: return f'{"" if self.name is None else f"{self.name}:"}< {self.val} >'
 class NodeRef(Node):
     '''Marks a special "reference" node that "includes" another node'''
@@ -256,6 +278,7 @@ class NodeRef(Node):
         super().__init__(**kwargs)
         self.target_name = target
         self.target = None
+
     @property
     def bound(self) -> bool: return self.target is not None
     def bind(self, targets: dict[bytes, Node]) -> bool:
@@ -268,9 +291,11 @@ class NodeRef(Node):
         '''
         self.target = targets.get(self.target_name)
         return self.target is not None
+
     def __call__(self, bm: SimpleBufferMatcher):
         if not self.bound:
             raise TypeError(f'Cannot call an unbound NodeRef (node target {self.target_name} was never bound)')
         return self.target(bm)
+
     def __str__(self) -> str:
         return f'@{self.target_name!r}'
