@@ -15,7 +15,7 @@ from . import nodes
 
 #> Header >/
 __all__ = ('PATTERNS', 'CHARS', 'RE_FLAGS',
-           'compile', 'compile_expression')
+           'compile', 'compile_iter', 'compile_expression')
 
 PATTERNS = SimpleNamespace(
     whitespace = re.compile(rb'\s+', re.MULTILINE),
@@ -26,6 +26,7 @@ PATTERNS = SimpleNamespace(
     string = re.compile(rb'"((?:[^\\"]|(?:\\.))*)"'),
     regex = re.compile(rb'(?P<g>\d)?/(?P<p>(?:[^\\/]|(?:\\.))+)/(?P<f>[ims]*)'),
     context = re.compile(rb'(\w*)'),
+    noderef = re.compile(rb'@(\w+)'),
 )
 PATTERNS.discard = re.compile(b'((' + PATTERNS.whitespace.pattern + b')|(' + PATTERNS.comment.pattern + b'))+', re.MULTILINE)
 
@@ -38,8 +39,17 @@ CHARS = SimpleNamespace(
     stealer = b'!',
 )
 
-def compile(bm: SimpleBufferMatcher) -> cabc.Generator[tuple[bytes, nodes.Node], None, None]:
-    '''Compiles `.cag` format into nodes'''
+def compile(bm: SimpleBufferMatcher) -> dict[bytes, nodes.Node]:
+    nodes = dict(compile_iter(bm))
+    for name,node in nodes.items():
+        if isinstance(node, nodes.NodeRef):
+            node.bind(nodes)
+def compile_iter(bm: SimpleBufferMatcher) -> cabc.Generator[tuple[bytes, nodes.Node], None, None]:
+    '''
+        Compiles `.cag` format into nodes,
+            one statement at a time
+        Note: does not automatically bind node references
+    '''
     while True:
         bm.match(PATTERNS.discard)
         if not bm.peek(1): return # EOF
@@ -80,6 +90,8 @@ def compile_expression(bm: SimpleBufferMatcher, *, _stop: bytes = CHARS.statemen
                     raise ValueError(f'Unknown regular expression flag {f!r} at {bm.pos} ({bm.lno+1}:{bm.cno})')
                 flags |= flag
             node = nodes.PatternNode(re.compile(m.group('p'), flags), None if m.group('g') is None else int(m.group('g')))
+        elif (m := bm.match(PATTERNS.noderef)) is not None:
+            node = nodes.NodeRef(m.group(1))
         else:
             match bm.read(1):
                 case CHARS.stealer:

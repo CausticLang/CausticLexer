@@ -13,7 +13,7 @@ from buffer_matcher import SimpleBufferMatcher
 __all__ = ('NodeSyntaxError',
            'Node', 'NodeGroup', 'NodeUnion',
            'StringNode', 'PatternNode',
-           'Stealer', 'Context',)
+           'Stealer', 'Context', 'NodeRef')
 
 #> Header >/
 # Exceptions
@@ -207,3 +207,32 @@ class Context(Node):
     def __call__(self, bm: SimpleBufferMatcher) -> typing.Any:
         return self.val
     def __str__(self) -> str: return f'{"" if self.name is None else f"{self.name}:"}< {self.val} >'
+class NodeRef(Node):
+    '''Marks a special "reference" node that "includes" another node'''
+    __slots__ = ('target_name', 'target')
+
+    target_name: bytes
+    target: Node | None
+
+    def __init__(self, target: bytes):
+        super().__init__(**kwargs)
+        self.target_name = target
+        self.target = None
+    @property
+    def bound(self) -> bool: return self.target is not None
+    def bind(self, targets: dict[bytes, Node]) -> bool:
+        '''
+            Attempts to bind this node to nodes in a dict
+            If `.target_name` is not found in the dict, `False` is returned,
+                otherwise `.target` is set to that node and `True` is returned
+            Note: if this node was previously bound, that binding is removed,
+                even if rebinding fails
+        '''
+        self.target = targets.get(self.target_name)
+        return self.target is not None
+    def __call__(self, bm: SimpleBufferMatcher):
+        if not self.bound:
+            raise TypeError(f'Cannot call an unbound NodeRef (node target {self.target_name} was never bound)')
+        return self.target(bm)
+    def __str__(self) -> str:
+        return f'@{self.target_name!r}'
