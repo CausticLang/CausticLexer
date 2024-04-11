@@ -6,5 +6,5 @@
 __all__ = ('basic_compiler', 'compiler', 'nodes')
 
 from . import basic_compiler
-from . import bootstrapped_compiler as compiler
+from . import compiler
 from . import nodes
