@@ -81,6 +81,17 @@ discard whitespace between its nodes
 A union is opened by `[` and closed by `]`  
 Unions match any of their contained nodes
 
+#### Range
+> `nodes.NodeRange`
+
+Can be created in the following ways:
+- ` - [node]`: Matches any amount of `[node]`
+- ` x- [node]`: Matches `x` or more of `[node]`
+- ` -x [node]`: Matches up to (but not including) `x` of `[node]`
+- ` a-b [node]`: Matches between `a` (inclusive) and `b` (exclusive) of `[node]`
+
+Note that this should be placed *after* a (name)[#naming]
+
 ### Real
 Real nodes are nodes that actually match content, such as strings or patterns
 
@@ -118,3 +129,22 @@ A "stealer" node is denoted by a `!`, and is only acceptable in a group
 
 If a [group](#group) reaches a "stealer" node, then the group will raise an exception
 if any of the subsequent nodes fail
+
+#### Context
+> `nodes.Context`
+
+A context is created with an opening `<` and closing `>`  
+Context nodes always mach, with the result being the (string) contents
+
+Context nodes should contain either a [string](#string),
+or a short sequence of alphanumeric characters and underscores
+
+#### Node Reference
+> `nodes.NodeRef`
+
+Denoted by an `@`, followed by a node name (as a string of alphanumeric characters and underscore)
+
+Matches the value of the targeted node, and returns the result of that
+
+Must be bound using either its `.bind()` method, or automatically through the
+default compilers
