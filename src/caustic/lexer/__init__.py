@@ -9,7 +9,8 @@
 '''
 
 #> Package >/
-__all__ = ('basic_compiler', 'compiler', 'precompiled', 'nodes')
+__all__ = ('basic_compiler', 'compiler', 'precompiled', 'nodes', 'serialize')
 
 from . import basic_compiler
 from . import nodes
+from . import serialize

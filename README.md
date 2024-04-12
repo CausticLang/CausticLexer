@@ -9,6 +9,8 @@ and uses a grammer system built in Caustic grammar format and compiled with the 
 The `nodes` module provides the nodes themselves, and allows manually building grammar by
 supplying nodes
 
+The `serialize` module provides functions for serializing and deserializing nodes
+
 # The `.cag` specification
 
 ## Pragmas
@@ -148,3 +150,9 @@ Matches the value of the targeted node, and returns the result of that
 
 Must be bound using either its `.bind()` method, or automatically through the
 default compilers
+
+
+# Changelog
+
+## 0.2.0
+- Implemented node saving and loading through the `serialize` module

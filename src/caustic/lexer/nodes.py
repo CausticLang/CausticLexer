@@ -58,6 +58,10 @@ class Node(metaclass=ABCMeta):
         '''Binds all sub-nodes, if possible'''
         if not hasattr(self, 'nodes'): return
         for node in self.nodes: node.bind(nodes)
+    def unbind(self) -> None:
+        '''Unbinds all sub-nodes'''
+        if not hasattr(self, 'nodes'): return
+        for node in self.nodes: node.unbind()
 
     @abstractmethod
     def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> object | dict[str, typing.Any]:
@@ -67,15 +71,6 @@ class Node(metaclass=ABCMeta):
     def __str__(self) -> str: pass
     @abstractmethod
     def __repr__(self) -> str: pass
-
-    @classmethod
-    def from_kwargs(cls, kwargs: dict) -> typing.Self:
-        '''Constructs the class from `kwargs` (for pickling)'''
-        return cls(**kwargs)
-    def __reduce__(self) -> tuple[cabc.Callable, tuple[dict]]:
-        return (self.from_kwargs, (
-            {n: getattr(self, n) for n in sum((c.__slots__ for c in type(self).mro()
-                                               if hasattr(c, '__slots__')), start=())},))
 
 ## Groups
 class NodeGroup(Node):
@@ -146,10 +141,6 @@ class NodeGroup(Node):
         return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.keep_whitespace]} {" ".join(map(str, self.nodes))} {")}"[self.keep_whitespace]}'
     def __repr__(self) -> str:
         return f'<{type(self).__qualname__} {self.name!r}{" [keep_whitespace]" if self.keep_whitespace else ""} {self.nodes!r}>'
-
-    @classmethod
-    def from_kwargs(cls, kwargs: dict) -> typing.Self:
-        return cls(*kwargs['nodes'], name=kwargs['name'])
 
 class NodeUnion(Node):
     '''Matches any of its nodes'''
@@ -333,6 +324,9 @@ class NodeRef(Node):
         '''
         self.target = targets.get(self.target_name)
         return self.target is not None
+    def unbind(self) -> None:
+        '''Unbinds this node'''
+        self.target = None
 
     def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> typing.Any:
         if not self.bound:
@@ -347,6 +341,3 @@ class NodeRef(Node):
     def __repr__(self) -> str:
         return (f'<{type(self).__qualname__} {self.name!r} target:{self.target_name!r} '
                 f'{"[unbound]" if self.target is None else repr(self.target)}>')
-
-    def __reduce__(self) -> tuple[cabc.Callable, tuple[dict]]:
-        return (self.from_kwargs, ({'name': self.name, 'target': self.target_name},))
