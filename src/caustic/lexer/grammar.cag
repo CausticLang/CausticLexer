@@ -1,10 +1,10 @@
 # Statements / comments
 COMMENT = "#" ! /.*?$/m ;
-STATEMENT = name:1/(\w+)/ "=" ! expr: - @EXPRESSION ";" ;
+STATEMENT = name:1/([\w\.]+)/ "=" ! expr: - @EXPRESSION ";" ;
 PRAGMA = "$" type:0/\w+/ args:1/(.*?)$/m ;
 
 # Expression supergroup
-EXPRESSION = name:1/(?:(\w*):)?/ expr:[
+EXPRESSION = name:1/(?:([\w\.]*):)?/ expr:[
     ( type:<"group"> val:@NODE_GROUP )
     ( type:<"group_ws_sensitive"> val:@NODE_GROUP_WS_SENSITIVE )
     ( type:<"union"> val:@NODE_UNION )
@@ -39,4 +39,4 @@ PATTERN_NODE = group:1/(\d*)?/ "/" ! pattern:0/(?:[^\/\\]|(?:\\.))*/ ! "/" ! fla
 # Meta nodes
 STEALER = "!" ;
 CONTEXT = "<" ! :[ ( str:@STRING_NODE ) ( raw:0/\w*/ ) ] ! ">" ;
-NODEREF = "@" ! :0/\w+/ ;
+NODEREF = "@" ! :0/[\w\.]+/ ;

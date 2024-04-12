@@ -41,7 +41,9 @@ A statement begins with an [identifier](#identifier), followed by an `=`,
 then an [expression](#expression), and finally a `;`
 
 ### Identifier
-An identifier is a sequence of alphanumeric characters and underscores
+An identifier is a sequence of alphanumeric characters, underscores, and periods
+
+Note: `basic_compiler` will not accept identifiers with periods
 
 ## Expression
 Expressions consist of nodes, where a node can be as simple as a [string](#string) to as complex as a [group](#group)
@@ -49,9 +51,11 @@ Expressions consist of nodes, where a node can be as simple as a [string](#strin
 ### Naming
 > `nodes.Node.name`
 
-Named nodes are denoted by a name (alphanumeric and underscores), followed
+Named nodes are denoted by a name (alphanumeric, underscores, and periods), followed
 by a `:`, and then the node/expression  
 This controls the return value of containing groups
+
+Note: `basic_compiler` will not accept node names with periods
 
 #### Anonymous
 "Anonymous" named nodes are expressions prefixed with `:`, but with
@@ -146,12 +150,14 @@ or a short sequence of alphanumeric characters and underscores
 #### Node Reference
 > `nodes.NodeRef`
 
-Denoted by an `@`, followed by a node name (as a string of alphanumeric characters and underscore)
+Denoted by an `@`, followed by a node name (as a string of alphanumeric characters, underscores, and periods)
 
 Matches the value of the targeted node, and returns the result of that
 
 Must be bound using either its `.bind()` method, or automatically through the
 default compilers
+
+Note: `basic_compiler` will not accept node references with periods
 
 
 # Changelog
@@ -176,3 +182,6 @@ default compilers
 ## 1.0.2
 - Fixed error causted by `compiler.py` `Compiler.compile_buffermatcher()` passing unneeded kwarg to `.pre_process()`
 - Made `NodeSyntaxError` self-formatting also include exception notes
+
+## 1.1.0
+- Added support for periods in node names
