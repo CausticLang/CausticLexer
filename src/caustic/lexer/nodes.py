@@ -11,6 +11,7 @@ from buffer_matcher import SimpleBufferMatcher
 from collections import abc as cabc
 
 from .util import WHITESPACE_PATT
+from .util import NO_MATCH
 #</Imports
 
 #> Header >/
@@ -46,8 +47,6 @@ class NodeSyntaxError(SyntaxError):
 class Node(metaclass=ABCMeta):
     '''The base class for all nodes'''
     __slots__ = ('name',)
-
-    NO_RETURN = object()
 
     name: str | None
 
@@ -108,10 +107,10 @@ class NodeGroup(Node):
             try: res = n(bm, stealer=stealer)
             except NodeSyntaxError as nse:
                 raise NodeSyntaxError(self, bm, f'Node {i} failed underneath node-group') from nse
-            if res is self.NO_RETURN:
+            if res is NO_MATCH:
                 assert not stealer
                 bm.load_pos(save)
-                return self.NO_RETURN
+                return NO_MATCH
             # Check how we should return results
             if n.name is None: # not assigned a name ("[name]:<node>")
                 if isinstance(results, dict): continue # don't add it
@@ -154,10 +153,10 @@ class NodeUnion(Node):
 
     def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> object | dict[str, typing.Any]:
         for n in self.nodes:
-            if (res := n(bm)) is not self.NO_RETURN:
+            if (res := n(bm)) is not NO_MATCH:
                 return res
         if stealer: raise NodeSyntaxError(self, bm, f'Expected union {self}')
-        return self.NO_RETURN
+        return NO_MATCH
 
     def __str__(self) -> str:
         return f'{"" if self.name is None else f"{self.name}:"}[ {" ".join(map(str, self.nodes))} ]'
@@ -196,20 +195,20 @@ class NodeRange(Node):
             try: results.append(self.node(bm, stealer=stealer))
             except NodeSyntaxError as nse:
                 raise NodeSyntaxError(self, bm, f'Expected at least {self.min} of {self.node}') from nse
-            if results[-1] is self.NO_RETURN:
+            if results[-1] is NO_MATCH:
                 self.load_pos()
-                return self.NO_RETURN
+                return NO_MATCH
             if not self.keep_whitespace:
                 bm.match(WHITESPACE_PATT)
         if self.max is None:
-            while (res := self.node(bm)) is not self.NO_RETURN:
+            while (res := self.node(bm)) is not NO_MATCH:
                 results.append(res)
                 if not self.keep_whitespace:
                     bm.match(WHITESPACE_PATT)
         else:
             for _ in range(self.min, self.max):
                 res = self.node(bm)
-                if res is self.NO_RETURN: break
+                if res is NO_MATCH: break
                 results.append(res)
                 if not self.keep_whitespace:
                     bm.match(WHITESPACE_PATT)
@@ -238,7 +237,7 @@ class StringNode(Node):
             return self.string
         if stealer:
             raise NodeSyntaxError(self, bm, f'Expected string {self}')
-        return self.NO_RETURN
+        return NO_MATCH
 
     def __str__(self) -> str:
         return f'"{"" if self.name is None else f"{self.name}:"}{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"'
@@ -261,7 +260,7 @@ class PatternNode(Node):
             return m.group(self.group) if self.group is not None else m
         if stealer:
             raise NodeSyntaxError(self, bm, f'Expected pattern {self}')
-        return self.NO_RETURN
+        return NO_MATCH
 
     FLAGS = {'i': re.IGNORECASE, 'm': re.MULTILINE, 's': re.DOTALL}
     def __str__(self) -> str:
@@ -289,7 +288,7 @@ class Context(Node):
     val: typing.Any
 
     def __init__(self, val: typing.Any, **kwargs):
-        assert val is not self.NO_RETURN, 'Cannot use NO_RETURN marker object for Context val'
+        assert val is not NO_MATCH, 'Cannot use NO_MATCH marker object for Context val'
         super().__init__(**kwargs)
         self.val = val
 
