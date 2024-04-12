@@ -29,6 +29,6 @@ NO_MATCH = object.__new__(NoMatchType)
 del NoMatchType
 
 # Functions
-def bind_nodes(nodes: dict[bytes, nodes.Node]) -> None:
+def bind_nodes(nodes: dict[bytes, 'nodes.Node']) -> None:
     '''Cross-binds all nodes'''
     for node in nodes.values(): node.bind(nodes)
