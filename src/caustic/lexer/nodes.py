@@ -8,6 +8,7 @@ import re
 import typing
 from abc import ABCMeta, abstractmethod
 from buffer_matcher import SimpleBufferMatcher
+from collections import abc as cabc
 #</Imports
 
 #> Header >/
@@ -66,6 +67,15 @@ class Node(metaclass=ABCMeta):
     def __str__(self) -> str: pass
     @abstractmethod
     def __repr__(self) -> str: pass
+
+    @classmethod
+    def from_kwargs(cls, kwargs: dict) -> typing.Self:
+        '''Constructs the class from `kwargs` (for pickling)'''
+        return cls(**kwargs)
+    def __reduce__(self) -> tuple[cabc.Callable, tuple[dict]]:
+        return (self.from_kwargs, (
+            {n: getattr(self, n) for n in sum((c.__slots__ for c in type(self).mro()
+                                               if hasattr(c, '__slots__')), start=())},))
 
 ## Groups
 class NodeGroup(Node):
@@ -137,6 +147,10 @@ class NodeGroup(Node):
     def __repr__(self) -> str:
         return f'<{type(self).__qualname__} {self.name!r}{" [keep_whitespace]" if self.keep_whitespace else ""} {self.nodes!r}>'
 
+    @classmethod
+    def from_kwargs(cls, kwargs: dict) -> typing.Self:
+        return cls(*kwargs['nodes'], name=kwargs['name'])
+
 class NodeUnion(Node):
     '''Matches any of its nodes'''
     __slots__ = ('nodes',)
@@ -158,6 +172,10 @@ class NodeUnion(Node):
         return f'{"" if self.name is None else f"{self.name}:"}[ {" ".join(map(str, self.nodes))} ]'
     def __repr__(self) -> str:
         return f'<{type(self).__qualname__} {self.name!r} {self.nodes!r}>'
+
+    @classmethod
+    def from_kwargs(cls, kwargs: dict) -> typing.Self:
+        return cls(*kwargs['nodes'], name=kwargs['name'])
 
 class NodeRange(Node):
     '''
@@ -329,3 +347,6 @@ class NodeRef(Node):
     def __repr__(self) -> str:
         return (f'<{type(self).__qualname__} {self.name!r} target:{self.target_name!r} '
                 f'{"[unbound]" if self.target is None else repr(self.target)}>')
+
+    def __reduce__(self) -> tuple[cabc.Callable, tuple[dict]]:
+        return (self.from_kwargs, ({'name': self.name, 'target': self.target_name},))
