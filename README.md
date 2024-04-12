@@ -175,3 +175,4 @@ default compilers
 
 ## 1.0.2
 - Fixed error causted by `compiler.py` `Compiler.compile_buffermatcher()` passing unneeded kwarg to `.pre_process()`
+- Made `NodeSyntaxError` self-formatting also include exception notes

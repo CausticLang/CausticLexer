@@ -39,6 +39,8 @@ class NodeSyntaxError(SyntaxError):
             while chain is not None:
                 sio.write(f'\n<{depth}>Node: {chain.node} failed @ {chain.bm.pos} ({chain.bm.lno+1}:{chain.bm.cno})\n')
                 sio.write('\n'.join(chain.args))
+                for n in getattr(chain, '__notes__', ()):
+                    sio.write(f'\nNote: {n}')
                 chain = chain.__cause__
                 depth += 1
             return sio.getvalue()
