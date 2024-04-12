@@ -23,6 +23,8 @@ class NoMatchType:
         return NO_MATCH
     def __repr__(self) -> str:
         return '<NO_MATCH>'
+    def __bool__(self) -> bool:
+        return False
 NO_MATCH = object.__new__(NoMatchType)
 del NoMatchType
 
