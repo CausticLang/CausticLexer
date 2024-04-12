@@ -61,9 +61,11 @@ class Node(metaclass=ABCMeta):
     @abstractmethod
     def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> object | dict[str, typing.Any]:
         '''Executes this node on `data`'''
+
     @abstractmethod
     def __str__(self) -> str: pass
-    def __repr__(self) -> str: return str(self)
+    @abstractmethod
+    def __repr__(self) -> str: pass
 
 ## Groups
 class NodeGroup(Node):
@@ -132,6 +134,8 @@ class NodeGroup(Node):
 
     def __str__(self) -> str:
         return f'{"" if self.name is None else f"{self.name}:"}{"({"[self.keep_whitespace]} {" ".join(map(str, self.nodes))} {")}"[self.keep_whitespace]}'
+    def __repr__(self) -> str:
+        return f'<{type(self).__qualname__} {self.name!r}{" [keep_whitespace]" if self.keep_whitespace else ""} {self.nodes!r}>'
 
 class NodeUnion(Node):
     '''Matches any of its nodes'''
@@ -152,6 +156,8 @@ class NodeUnion(Node):
 
     def __str__(self) -> str:
         return f'{"" if self.name is None else f"{self.name}:"}[ {" ".join(map(str, self.nodes))} ]'
+    def __repr__(self) -> str:
+        return f'<{type(self).__qualname__} {self.name!r} {self.nodes!r}>'
 
 class NodeRange(Node):
     '''
@@ -202,6 +208,8 @@ class NodeRange(Node):
 
     def __str__(self) -> str:
         return f'{self.min or ""}-{"" if self.max is None else {self.max}} {self.node}'
+    def __repr__(self) -> str:
+        return f'<{type(self).__qualname__} {self.name!r} {" [keep_whitespace]" if self.keep_whitespace else ""}{self.min!r} - {self.max!r}>'
 
 ## Real
 class StringNode(Node):
@@ -225,6 +233,8 @@ class StringNode(Node):
 
     def __str__(self) -> str:
         return f'"{"" if self.name is None else f"{self.name}:"}{self.string.decode(errors="backslashreplace").replace("\"", "\\\"")}"'
+    def __repr__(self) -> str:
+        return f'<{type(self).__qualname__} {self.name!r} {self.string!r}>'
 class PatternNode(Node):
     '''Matches a pattern (regular expression)'''
     __slots__ = ('pattern', 'group')
@@ -250,6 +260,8 @@ class PatternNode(Node):
                 f'{"" if self.group is None else self.group}/'
                 f'{self.pattern.pattern.decode(errors="backslashreplace").replace("/", "\\/")}/'
                 f'{"".join(f for f,v in self.FLAGS.items() if v & self.pattern.flags)}')
+    def __repr__(self) -> str:
+        return f'<{type(self).__qualname__} {self.pattern!r}{"" if self.group is None else f"[{self.group}]"}>'
 
 ## Meta
 class Stealer(Node):
@@ -260,6 +272,7 @@ class Stealer(Node):
         raise TypeError(f'Stealer nodes should not be called')
 
     def __str__(self) -> str: return '!'
+    def __repr__(self) -> str: return f'<{type(self).__qualname__}>'
 class Context(Node):
     '''Marks a special "context" node that always matches'''
     __slots__ = ('val',)
@@ -274,7 +287,10 @@ class Context(Node):
     def __call__(self, bm: SimpleBufferMatcher, *, stealer: bool = False) -> typing.Any:
         return self.val
 
-    def __str__(self) -> str: return f'{"" if self.name is None else f"{self.name}:"}< {self.val} >'
+    def __str__(self) -> str:
+        return f'{"" if self.name is None else f"{self.name}:"}< {self.val} >'
+    def __repr__(self) -> str:
+        return f'<{type(self).__qualname__}>'
 class NodeRef(Node):
     '''Marks a special "reference" node that "includes" another node'''
     __slots__ = ('target_name', 'target')
@@ -310,3 +326,6 @@ class NodeRef(Node):
 
     def __str__(self) -> str:
         return f'@{self.target_name!r}'
+    def __repr__(self) -> str:
+        return (f'<{type(self).__qualname__} {self.name!r} target:{self.target_name!r} '
+                f'{"[unbound]" if self.target is None else repr(self.target)}>')
