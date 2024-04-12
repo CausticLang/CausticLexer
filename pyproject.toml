@@ -2,6 +2,9 @@
 name = "caustic.lexer"
 version = "0.1.0"
 dependencies = []
+dependencies = [
+    "buffer-matcher >= 0.1.1",
+]
 requires-python = ">=3.12"
 authors = [{name="Shae.c32"}]
 maintainers = []
