@@ -201,7 +201,7 @@ class NodeRange(Node):
         return results
 
     def __str__(self) -> str:
-        return f'{self.min or ""}.{"" if self.max is None else {self.max}}~ {self.node}'
+        return f'{self.min or ""}-{"" if self.max is None else {self.max}} {self.node}'
 
 ## Real
 class StringNode(Node):
