@@ -1,6 +1,6 @@
 [project]
 name = "caustic.lexer"
-version = "1.0.0-1"
+version = "1.0.1"
 dependencies = [
     "buffer-matcher >= 0.1.1",
 ]
@@ -31,3 +31,6 @@ Issues = "https://codeberg.org/Caustic/CausticLexer/issues"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+"caustic.lexer" = ["grammar.cag", "precompiled_nodes.pkl"]

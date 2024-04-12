@@ -168,3 +168,7 @@ default compilers
 
 ### 1.0.0-1
 - Fixed an inaccuracy in README
+
+## 1.0.1
+- Added builtin `grammar.cag` to package
+- Added precompiled `precompiled_nodes.pkl` to package
