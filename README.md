@@ -172,3 +172,6 @@ default compilers
 ## 1.0.1
 - Added builtin `grammar.cag` to package
 - Added precompiled `precompiled_nodes.pkl` to package
+
+## 1.0.2
+- Fixed error causted by `compiler.py` `Compiler.compile_buffermatcher()` passing unneeded kwarg to `.pre_process()`

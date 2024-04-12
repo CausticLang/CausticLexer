@@ -66,7 +66,7 @@ class Compiler:
                               precompile_only: bool = False) -> dict[bytes, nodes.Node]:
         '''Compiles a grammar (dict of names and nodes) from a buffer matcher'''
         if source is None: source = '<buffermatcher>'
-        try: pre = self.pre_process(bm, source=source, bind=bind)
+        try: pre = self.pre_process(bm, source=source)
         except Exception as e:
             e.add_note(f'Whilst pre-processing grammar from: {source}')
             raise e
