@@ -19,8 +19,8 @@ The `util` module provides small utilities
 Pragmas are special directives embedded in the grammar  
 These are only supported on the bootstrapped `compile` module
 
-### Include / Import
-> `$include [path]`, `$import [path]`
+### Include
+> `$include [path]`
 
 Allows putting multiple grammar files together
 
@@ -29,9 +29,6 @@ directories, in order:
 - The path of the includer/importer (if possible)
 - The `builtin_path` of the `compiler` module (the location of `compiler.py`)
 - The current directory
-
-The difference between include and import is that included nodes will be bound
-with the rest of the nodes from the includer, whilst imported nodes will not
 
 ## Comments
 Comments may start with a `#`
@@ -159,3 +156,9 @@ default compilers
 ## 0.2.0
 - Implemented node saving and loading through the `serialize` module
 - Moved `compiler.bind_nodes()` to `util.bind_nodes()`
+
+## 1.0.0
+- Completely reworked compiler caching
+- Removed `$import` pragma
+- Moved `WHITESPACE_PATT` to `.util`
+- Changed `nodes.Node.NO_RETURN` to singleton(ish) `util.NO_MATCH`
