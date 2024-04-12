@@ -9,15 +9,15 @@ import typing
 from abc import ABCMeta, abstractmethod
 from buffer_matcher import SimpleBufferMatcher
 from collections import abc as cabc
+
+from .util import WHITESPACE_PATT
 #</Imports
 
 #> Header >/
-__all__ = ('WHITESPACE_PATT', 'NodeSyntaxError',
+__all__ = ('NodeSyntaxError',
            'Node', 'NodeGroup', 'NodeUnion', 'NodeRange',
            'StringNode', 'PatternNode',
            'Stealer', 'Context', 'NodeRef')
-
-WHITESPACE_PATT = re.compile(rb'\s+')
 
 # Exceptions
 class NodeSyntaxError(SyntaxError):
