@@ -11,6 +11,8 @@ supplying nodes
 
 The `serialize` module provides functions for serializing and deserializing nodes
 
+The `util` module provides small utilities
+
 # The `.cag` specification
 
 ## Pragmas
@@ -156,3 +158,4 @@ default compilers
 
 ## 0.2.0
 - Implemented node saving and loading through the `serialize` module
+- Moved `compiler.bind_nodes()` to `util.bind_nodes()`

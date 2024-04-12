@@ -111,10 +111,6 @@ def compile_dict(data: dict, *, source: Path | str | None = '<dict>', grammar: d
     bind_nodes(cnodes)
     return cnodes
 
-def bind_nodes(nodes: dict[bytes, nodes.Node]) -> None:
-    '''Cross-binds all nodes'''
-    for node in nodes.values(): node.bind(nodes)
-
 def compile_node_name(name: bytes | str | None, expr: dict) -> nodes.Node:
     '''Compiles a node and names it'''
     node = compile_node(**expr)
