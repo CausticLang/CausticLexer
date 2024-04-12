@@ -1,10 +1,13 @@
 Caustic's lexing/grammar framework
 
 The `basic_compiler` module is a less advanced compiler, but is used to
-bootstrap the `compiler` module
+bootstrap the `Compiler`
 
-The `compiler` module compiles grammars from Caustic grammar (`.cag`) files into nodes,
+The `Compiler` class compiles grammars from Caustic grammar (`.cag`) files into nodes,
 and uses a grammer system built in Caustic grammar format and compiled with the `basic_compiler` module
+
+The `Compiler` is loaded through the `load_compiler()` function in the package,
+and can be cached to the disk using the `save_compiler()` function
 
 The `nodes` module provides the nodes themselves, and allows manually building grammar by
 supplying nodes
@@ -162,3 +165,6 @@ default compilers
 - Removed `$import` pragma
 - Moved `WHITESPACE_PATT` to `.util`
 - Changed `nodes.Node.NO_RETURN` to singleton(ish) `util.NO_MATCH`
+
+### 1.0.0-1
+- Fixed an inaccuracy in README

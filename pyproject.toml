@@ -1,6 +1,6 @@
 [project]
 name = "caustic.lexer"
-version = "1.0.0"
+version = "1.0.0-1"
 dependencies = [
     "buffer-matcher >= 0.1.1",
 ]
