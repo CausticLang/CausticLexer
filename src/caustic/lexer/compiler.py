@@ -5,14 +5,16 @@
 #> Imports
 import re
 import codecs
+import struct
 import typing
 import buffer_matcher
+from codecs import escape_decode
 from pathlib import Path
 from functools import singledispatchmethod
-from collections import abc as cabc
 
 from . import nodes
 from . import util
+from .basic_compiler import RE_FLAGS
 #</Imports
 
 #> Header >/
@@ -121,7 +123,47 @@ class Compiler:
                 raise TypeError(f'Unknown pragma type {type_!r}')
 
     ## Compile
-    def post_process_compile(working: dict[bytes, dict], *, bind: bool = True) -> dict[bytes, nodes.Node]:
+    def post_process_compile(self, working: dict[bytes, dict], *, bind: bool = True) -> dict[bytes, nodes.Node]:
         '''Compiles pre-processed grammar into nodes'''
-        for k,v in working.items():
-            print(k, v)
+        grammar = {name: self.compile_node(b'group', node)
+                   for name,node in working.items()}
+        if bind: util.bind_nodes(grammar)
+        return grammar
+
+    def compile_expr(self, name: bytes, expr: dict) -> nodes.Node:
+        '''Compiles a node's expression and names it'''
+        node = self.compile_node(**expr)
+        node.name = None if name is None else name.decode()
+        return node
+
+    def compile_node(self, type: bytes, val: dict | bytes | None = None) -> nodes.Node:
+        '''Compiles a node's expression'''
+        match type:
+            case b'group' | b'group_ws_sensitive' | b'union':
+                subnodes = tuple(self.compile_expr(**expr) for expr in val)
+                if type == b'union':
+                    return nodes.NodeUnion(*subnodes)
+                return nodes.NodeGroup(*subnodes, keep_whitespace=(type == b'group_ws_sensitive'))
+            case b'range' | b'range_ws_sensitive':
+                return nodes.NodeRange(node=self.compile_expr(**val['node']),
+                    min=int(val['min'] or 0), max=(None if val['max'] is None else int(val['max'])),
+                    keep_whitespace=(type == b'range_ws_sensitive'))
+            case b'string':
+                return nodes.StringNode(escape_decode(val)[0])
+            case b'pattern':
+                flags = re.NOFLAG
+                for f in struct.unpack(f'{len(val["flags"])}c', val['flags']): # iterate through bytes
+                    flag = RE_FLAGS.get(f, None)
+                    if flag is None:
+                        raise ValueError(f'Unknown regular expression flag {f!r}')
+                    flags |= flag
+                return nodes.PatternNode(re.compile(val['pattern'], flags),
+                                         None if val['group'] is None else int(val['group']))
+            case b'stealer':
+                return nodes.Stealer()
+            case b'context':
+                return nodes.Context(escape_decode(val['str'])[0] if 'str' in val else val['raw'])
+            case b'noderef':
+                return nodes.NodeRef(val)
+            case _:
+                raise TypeError(f'Unknown node type {type!r}')
