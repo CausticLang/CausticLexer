@@ -117,6 +117,28 @@ class NodeGroup(Node):
             if n.name is None: # not assigned a name ("[name]:<node>")
                 if isinstance(results, dict): continue # don't add it
                 if not single_result: results.append(res)
+            elif n.name == b'^': # unpack name
+                if single_result:
+                    te = TypeError(f'Conflicting return types: unpack result cannot be added to single result')
+                    te.add_note(str(n))
+                    te.add_note(f'In {self}')
+                    raise te
+                if isinstance(res, dict):
+                    if not isinstance(results, dict):
+                        results = {}
+                    results.update(res)
+                elif isinstance(res, cabc.Sequence):
+                    if isinstance(results, dict):
+                        te = TypeError(f'Conflicting return types: cannot unpack sequence result into named results')
+                        te.add_note(str(n))
+                        te.add_note(f'In {self}')
+                        raise te
+                    results.extend(res)
+                else:
+                    te = TypeError(f'Cannot unpack return {res!r}')
+                    te.add_note(str(n))
+                    te.add_note(f'In {self}')
+                    raise te
             elif n.name: # name is not blank ("<name>:<node>")
                 if isinstance(results, dict):
                     results[n.name] = res

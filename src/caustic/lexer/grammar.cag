@@ -4,7 +4,7 @@ STATEMENT = name:1/([\w\.]+)/ "=" ! expr: - @EXPRESSION ";" ;
 PRAGMA = "$" type:0/\w+/ args:1/(.*?)$/m ;
 
 # Expression supergroup
-EXPRESSION = name:1/(?:([\w\.]*):)?/ expr:[
+EXPRESSION = name:1/(?:(\^|[\w\.]*):)?/ expr:[
     ( type:<"group"> val:@NODE_GROUP )
     ( type:<"group_ws_sensitive"> val:@NODE_GROUP_WS_SENSITIVE )
     ( type:<"union"> val:@NODE_UNION )

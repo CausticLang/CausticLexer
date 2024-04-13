@@ -61,6 +61,11 @@ Note: `basic_compiler` will not accept node names with periods
 "Anonymous" named nodes are expressions prefixed with `:`, but with
 no leading name
 
+#### Unpack
+"Unpack" nodes are expressions prefixed with `^:`
+
+Note: `basic_compiler` will not accept unpack nodes
+
 ### Group
 > `nodes.NodeGroup`
 
@@ -73,6 +78,7 @@ The return value of this group will be dependent on its contents' [naming](#nami
 - A group containing no named nodes will return a list of its nodes' results
 - A group containing nodes with "[anonymous](#anonymous)" names returns the last matched anonymous nodes' return value
 - A group containing [named](#naming) nodes returns a dict containing a mapping of the names to the nodes' results
+- Any [unpack](#unpack) nodes will unpack either their elements (sequence) or their names and values into the surrounding group's result
 
 Mixing anonymous and named expressions in a single group will result in an error
 
