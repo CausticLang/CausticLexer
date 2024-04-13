@@ -192,3 +192,6 @@ Note: `basic_compiler` will not accept node references with periods
 ## 1.1.0
 - Added support for periods in node names
 - Fixed `Compiler.post_process_compile()` not actually doing anything
+
+## 1.2.0
+- Implemented [unpacking](#unpack) nodes
