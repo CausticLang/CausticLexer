@@ -30,11 +30,11 @@ NODE_RANGE_WS_SENSITIVE = min:0/\d*/ "~" ! max:1/(\d+)?/ node:@EXPRESSION ;
 # Real nodes
 ## StringNode
 STRING_NODE = :[
-    ( "\"" ! :0/(?:[^"\\]|(?:\\.))*/ "\"" )
-    ( "'" ! :0/(?:[^'\\]|(?:\\.))*/ "'" )
+    { "\"" ! :0/(?:[^"\\]|(?:\\.))*/ "\"" }
+    { "'" ! :0/(?:[^'\\]|(?:\\.))*/ "'" }
 ];
 ## PatternNode
-PATTERN_NODE = group:1/(\d*)?/ "/" ! pattern:0/(?:[^\/\\]|(?:\\.))*/ ! "/" ! flags:0/[ims]*/ ;
+PATTERN_NODE = :{ group:1/(\d*)?/ "/" ! pattern:0/(?:[^\/\\]|(?:\\.))*/ ! "/" ! flags:0/[ims]*/ } ;
 
 # Meta nodes
 STEALER = "!" ;

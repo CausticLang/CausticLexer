@@ -195,3 +195,6 @@ Note: `basic_compiler` will not accept node references with periods
 
 ## 1.2.0
 - Implemented [unpacking](#unpack) nodes
+
+## 1.2.1
+- Fixed several nodes improperly stripping whitespace
