@@ -117,7 +117,7 @@ class NodeGroup(Node):
             if n.name is None: # not assigned a name ("[name]:<node>")
                 if isinstance(results, dict): continue # don't add it
                 if not single_result: results.append(res)
-            elif n.name == b'^': # unpack name
+            elif n.name == '^': # unpack name
                 if single_result:
                     te = TypeError(f'Conflicting return types: unpack result cannot be added to single result')
                     te.add_note(str(n))
