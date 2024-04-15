@@ -201,3 +201,4 @@ Note: `basic_compiler` will not accept node references with periods
 
 ## 1.2.2
 - Fixed unpacking never triggering
+- Fixed `NodeRange`s raising exceptions upon backtracking
