@@ -1,4 +1,10 @@
-Caustic's lexing/grammar framework
+# Important note
+**This is now unused in favor of instead utilizing a more mature pre-existing
+parsing framework**
+
+Later in development of Caustic, this may or may not be revisited
+
+# Caustic's lexing/grammar framework
 
 The `basic_compiler` module is a less advanced compiler, but is used to
 bootstrap the `Compiler`

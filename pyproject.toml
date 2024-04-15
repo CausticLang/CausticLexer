@@ -1,17 +1,17 @@
 [project]
 name = "caustic.lexer"
-version = "1.2.2"
+version = "1.2.2-1"
 dependencies = [
     "buffer-matcher >= 0.1.1",
 ]
 requires-python = ">=3.12"
 authors = [{name="Shae.c32"}]
 maintainers = []
-description = "Grammar compilation for Caustic"
+description = "Grammar compilation for Caustic--ABANDONED AND UNUSED"
 readme = "README.md"
 keywords = ['caustic', 'language', 'parser', 'lexer']
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 7 - Inactive",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
