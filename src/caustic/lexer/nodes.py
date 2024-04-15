@@ -220,7 +220,7 @@ class NodeRange(Node):
             except NodeSyntaxError as nse:
                 raise NodeSyntaxError(self, bm, f'Expected at least {self.min} of {self.node}') from nse
             if results[-1] is NO_MATCH:
-                self.load_pos()
+                bm.load_pos(save)
                 return NO_MATCH
             if not self.keep_whitespace:
                 bm.match(WHITESPACE_PATT)
